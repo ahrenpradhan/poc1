@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Check if schema.prisma has been modified
+if git diff --cached --name-only | grep -q "packages/db/prisma/schema.prisma"; then
+  echo "🔍 Prisma schema changes detected!"
+  echo "📦 Creating database migration..."
+
+  cd packages/db
+
+  # Generate a timestamp-based migration name
+  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+  MIGRATION_NAME="schema_update_${TIMESTAMP}"
+
+  # Create migration
+  npx prisma migrate dev --name "$MIGRATION_NAME" --create-only
+
+  if [ $? -eq 0 ]; then
+    echo "✅ Migration created successfully: $MIGRATION_NAME"
+
+    # Add the new migration files to the commit
+    git add prisma/migrations
+
+    echo "📝 Migration files added to commit"
+  else
+    echo "❌ Failed to create migration"
+    echo "Please fix the schema errors and try again"
+    exit 1
+  fi
+
+  cd ../..
+fi

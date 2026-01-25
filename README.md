@@ -83,6 +83,31 @@ The server will be available at:
 - API: `http://localhost:3000`
 - GraphiQL: `http://localhost:3000/graphiql`
 
+## Database Migrations
+
+### Automatic Migrations (Husky)
+When you modify `packages/db/prisma/schema.prisma` and commit, a pre-commit hook automatically:
+1. Detects schema changes
+2. Creates a new migration with timestamp
+3. Adds migration files to your commit
+
+### Manual Migration Commands
+```bash
+cd packages/db
+
+# Create migration (interactive)
+npm run migrate
+
+# Create migration without applying
+npm run migrate:create
+
+# Deploy migrations (production)
+npm run migrate:deploy
+
+# Open Prisma Studio
+npm run studio
+```
+
 ## Documentation
 
 - [Setup Summary](./SETUP_SUMMARY.md) - Complete setup documentation
@@ -97,6 +122,8 @@ The server will be available at:
 - ✅ Centralized environment configuration
 - ✅ Monorepo structure with shared packages
 - ✅ Snake_case database naming convention
+- ✅ Automatic migration creation via Husky pre-commit hooks
+- ✅ Port conflict handling (auto-kill on startup)
 
 ## Tech Stack
 
