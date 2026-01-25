@@ -1,10 +1,14 @@
-import { hashPassword, comparePassword, generateToken } from '../../utils/auth.js';
+import {
+  hashPassword,
+  comparePassword,
+  generateToken,
+} from "../../utils/auth.js";
 
 export const userResolvers = {
   Query: {
     me: async (_, __, context) => {
       if (!context.user) {
-        throw new Error('Not authenticated');
+        throw new Error("Not authenticated");
       }
 
       const user = await context.prisma.user.findUnique({
@@ -15,7 +19,7 @@ export const userResolvers = {
       });
 
       if (!user) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
 
       return user;
@@ -23,7 +27,7 @@ export const userResolvers = {
 
     user: async (_, { id }, context) => {
       if (!context.user) {
-        throw new Error('Not authenticated');
+        throw new Error("Not authenticated");
       }
 
       const user = await context.prisma.user.findUnique({
@@ -34,10 +38,24 @@ export const userResolvers = {
       });
 
       if (!user) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
 
       return user;
+    },
+
+    users: async (_, __, context) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      const users = await context.prisma.user.findMany({
+        include: {
+          profile: true,
+        },
+      });
+
+      return users;
     },
   },
 
@@ -51,7 +69,7 @@ export const userResolvers = {
       });
 
       if (existingUser) {
-        throw new Error('User with this email already exists');
+        throw new Error("User with this email already exists");
       }
 
       // Hash password
@@ -100,17 +118,17 @@ export const userResolvers = {
       });
 
       if (!user || !user.auth_key) {
-        throw new Error('Invalid email or password');
+        throw new Error("Invalid email or password");
       }
 
       // Verify password
       const isValidPassword = await comparePassword(
         password,
-        user.auth_key.hashed_password
+        user.auth_key.hashed_password,
       );
 
       if (!isValidPassword) {
-        throw new Error('Invalid email or password');
+        throw new Error("Invalid email or password");
       }
 
       // Generate JWT token

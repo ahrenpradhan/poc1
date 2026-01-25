@@ -36,6 +36,7 @@ export const userSchema = `
   type Query {
     me: User
     user(id: Int!): User
+    users: [User!]!
   }
 
   type Mutation {
