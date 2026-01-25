@@ -1,14 +1,17 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { Sidebar, SidebarProvider } from "@repo/ui/primitives/sidebar";
-import { Navbar } from "./navbar";
+import { Navbar } from "@/components/navbar";
 import { Button } from "@repo/ui/primitives/button";
 import { Search } from "lucide-react";
 
 export default function Page() {
+  const { data: session } = useSession();
+
   return (
     <SidebarProvider defaultOpen={false}>
-      <Sidebar />
+      {session && <Sidebar />}
       <main className="flex-1 flex flex-col">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8">

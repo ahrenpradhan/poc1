@@ -6,8 +6,8 @@ import { useSession, signOut } from "next-auth/react";
 import { Button } from "@repo/ui/primitives/button";
 import { useSidebar } from "@repo/ui/primitives/sidebar";
 import { HelpCircle, PanelLeft, SunMoon, LogOut } from "lucide-react";
-import { LoginModal } from "./login-modal";
-import { SignUpModal } from "./signup-modal";
+import { LoginModal } from "@/components/login-modal";
+import { SignUpModal } from "@/components/signup-modal";
 
 export function Navbar() {
   const { toggleSidebar } = useSidebar();
@@ -29,14 +29,16 @@ export function Navbar() {
       <nav>
         <div className="flex h-14 items-center px-4 justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-md"
-              onClick={toggleSidebar}
-            >
-              <PanelLeft className="h-5 w-5" />
-            </Button>
+            {status === "authenticated" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-md"
+                onClick={toggleSidebar}
+              >
+                <PanelLeft className="h-5 w-5" />
+              </Button>
+            )}
             <div className="flex items-center gap-1 font-medium">Cortex</div>
           </div>
           <div className="flex items-center gap-2">
