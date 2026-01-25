@@ -226,6 +226,36 @@ fi
 
 print_success "Database migrations completed"
 
+# ============================================
+# Seed Free Plan
+# ============================================
+print_info "Checking for free plan..."
+
+# Check if free plan exists
+PLAN_EXISTS=$(npx prisma db execute --stdin <<EOF
+SELECT COUNT(*) as count FROM plan WHERE price = 0 AND deleted_at IS NULL;
+EOF
+)
+
+if echo "$PLAN_EXISTS" | grep -q "count.*0"; then
+  print_info "Inserting free plan..."
+
+  npx prisma db execute --stdin <<EOF
+INSERT INTO plan (title, description, price, currency, \`interval\`, is_active, created_at, updated_at, deleted_at)
+VALUES('Free', 'Free for all to use', 0, 'INR', 'null', 1, NOW(), NOW(), NULL);
+EOF
+
+  if [ $? -eq 0 ]; then
+    print_success "Free plan inserted successfully"
+  else
+    print_warning "Could not insert free plan automatically"
+    echo "Please insert manually using:"
+    echo "  mysql -u ${DB_USER} -p ${DB_NAME} -e \"INSERT INTO plan (title, description, price, currency, \\\`interval\\\`, is_active, created_at, updated_at) VALUES('Free', 'Free for all to use', 0, 'INR', 'null', 1, NOW(), NOW());\""
+  fi
+else
+  print_success "Free plan already exists"
+fi
+
 cd ../..
 
 # ============================================

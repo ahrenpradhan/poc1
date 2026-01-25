@@ -18,6 +18,7 @@ model user {
   auth_key   auth_key?
   user_plans user_plan[]
   projects   project[]
+  chats      chat[]
 }
 
 model profile {
@@ -84,7 +85,7 @@ model user_plan {
 
 model project {
   id          Int     @id @default(autoincrement())
-  user_id     Int
+  owner_id    Int
   title       String  @db.VarChar(255)
   description String? @db.Text
   is_archived Boolean @default(false)
@@ -94,15 +95,17 @@ model project {
   deleted_at DateTime?
 
   // Relations
-  user  user   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user  user   @relation(fields: [owner_id], references: [id], onDelete: Cascade)
   chats chat[]
 
-  @@index([user_id])
+  @@index([owner_id])
 }
 
 model chat {
   id         Int     @id @default(autoincrement())
   project_id Int
+  owner_id   Int
+  public_id  String  @unique @db.VarChar(32)
   title      String? @db.VarChar(255)
 
   created_at DateTime  @default(now())
@@ -110,10 +113,13 @@ model chat {
   deleted_at DateTime?
 
   // Relations
+  user     user      @relation(fields: [owner_id], references: [id], onDelete: Cascade)
   project  project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
   messages message[]
 
   @@index([project_id])
+  @@index([owner_id])
+  @@index([public_id])
 }
 
 enum MessageRole {
@@ -123,10 +129,11 @@ enum MessageRole {
 }
 
 model message {
-  id      Int         @id @default(autoincrement())
-  chat_id Int
-  role    MessageRole
-  content String      @db.LongText
+  id       Int         @id @default(autoincrement())
+  chat_id  Int
+  sequence Int
+  role     MessageRole
+  content  String      @db.LongText
 
   created_at DateTime  @default(now())
   deleted_at DateTime?
@@ -135,4 +142,5 @@ model message {
   chat chat @relation(fields: [chat_id], references: [id], onDelete: Cascade)
 
   @@index([chat_id])
+  @@index([chat_id, sequence])
 }

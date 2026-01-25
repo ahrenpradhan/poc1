@@ -7,7 +7,7 @@ export const projectResolvers = {
 
       const projects = await context.prisma.project.findMany({
         where: {
-          user_id: context.user.userId,
+          owner_id: context.user.userId,
           deleted_at: null,
         },
         orderBy: {
@@ -26,7 +26,7 @@ export const projectResolvers = {
       const project = await context.prisma.project.findFirst({
         where: {
           id,
-          user_id: context.user.userId,
+          owner_id: context.user.userId,
           deleted_at: null,
         },
       });
@@ -53,7 +53,7 @@ export const projectResolvers = {
         },
       });
 
-      if (!chat || chat.project.user_id !== context.user.userId) {
+      if (!chat || chat.project.owner_id !== context.user.userId) {
         throw new Error("Chat not found");
       }
 
@@ -76,7 +76,7 @@ export const projectResolvers = {
         },
       });
 
-      if (!chat || chat.project.user_id !== context.user.userId) {
+      if (!chat || chat.project.owner_id !== context.user.userId) {
         throw new Error("Chat not found");
       }
 
@@ -86,7 +86,7 @@ export const projectResolvers = {
           deleted_at: null,
         },
         orderBy: {
-          created_at: "asc",
+          sequence: "asc",
         },
       });
 
@@ -104,7 +104,7 @@ export const projectResolvers = {
 
       const project = await context.prisma.project.create({
         data: {
-          user_id: context.user.userId,
+          owner_id: context.user.userId,
           title: input.title,
           description: input.description,
           created_at: currentTime,
@@ -124,7 +124,7 @@ export const projectResolvers = {
       const existing = await context.prisma.project.findFirst({
         where: {
           id,
-          user_id: context.user.userId,
+          owner_id: context.user.userId,
           deleted_at: null,
         },
       });
@@ -153,7 +153,7 @@ export const projectResolvers = {
       const existing = await context.prisma.project.findFirst({
         where: {
           id,
-          user_id: context.user.userId,
+          owner_id: context.user.userId,
           deleted_at: null,
         },
       });
@@ -182,7 +182,7 @@ export const projectResolvers = {
       const project = await context.prisma.project.findFirst({
         where: {
           id: input.project_id,
-          user_id: context.user.userId,
+          owner_id: context.user.userId,
           deleted_at: null,
         },
       });
@@ -193,9 +193,15 @@ export const projectResolvers = {
 
       const currentTime = new Date();
 
+      // Generate unique public_id (32 character random string)
+      const crypto = require("crypto");
+      const public_id = crypto.randomBytes(16).toString("hex");
+
       const chat = await context.prisma.chat.create({
         data: {
           project_id: input.project_id,
+          owner_id: context.user.userId,
+          public_id: public_id,
           title: input.title,
           created_at: currentTime,
           updated_at: currentTime,
@@ -221,7 +227,7 @@ export const projectResolvers = {
         },
       });
 
-      if (!existing || existing.project.user_id !== context.user.userId) {
+      if (!existing || existing.project.owner_id !== context.user.userId) {
         throw new Error("Chat not found");
       }
 
@@ -252,7 +258,7 @@ export const projectResolvers = {
         },
       });
 
-      if (!existing || existing.project.user_id !== context.user.userId) {
+      if (!existing || existing.project.owner_id !== context.user.userId) {
         throw new Error("Chat not found");
       }
 
@@ -283,15 +289,28 @@ export const projectResolvers = {
         },
       });
 
-      if (!chat || chat.project.user_id !== context.user.userId) {
+      if (!chat || chat.project.owner_id !== context.user.userId) {
         throw new Error("Chat not found");
       }
 
+      // Get the next sequence number
+      const lastMessage = await context.prisma.message.findFirst({
+        where: {
+          chat_id: input.chat_id,
+          deleted_at: null,
+        },
+        orderBy: {
+          sequence: "desc",
+        },
+      });
+
+      const nextSequence = lastMessage ? lastMessage.sequence + 1 : 1;
       const currentTime = new Date();
 
       const message = await context.prisma.message.create({
         data: {
           chat_id: input.chat_id,
+          sequence: nextSequence,
           role: input.role,
           content: input.content,
           created_at: currentTime,
@@ -321,10 +340,7 @@ export const projectResolvers = {
         },
       });
 
-      if (
-        !existing ||
-        existing.chat.project.user_id !== context.user.userId
-      ) {
+      if (!existing || existing.chat.project.owner_id !== context.user.userId) {
         throw new Error("Message not found");
       }
 
@@ -370,7 +386,7 @@ export const projectResolvers = {
           deleted_at: null,
         },
         orderBy: {
-          created_at: "asc",
+          sequence: "asc",
         },
       });
     },

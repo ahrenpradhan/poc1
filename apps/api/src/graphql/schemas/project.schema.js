@@ -1,7 +1,7 @@
 export const projectSchema = `
   type Project {
     id: Int!
-    user_id: Int!
+    owner_id: Int!
     title: String!
     description: String
     is_archived: Boolean!
@@ -13,6 +13,8 @@ export const projectSchema = `
   type Chat {
     id: Int!
     project_id: Int!
+    owner_id: Int!
+    public_id: String!
     title: String
     created_at: String!
     updated_at: String!
@@ -28,6 +30,7 @@ export const projectSchema = `
   type Message {
     id: Int!
     chat_id: Int!
+    sequence: Int!
     role: MessageRole!
     content: String!
     created_at: String!
@@ -59,14 +62,14 @@ export const projectSchema = `
     content: String!
   }
 
-  type Query {
+  extend type Query {
     projects: [Project!]!
     project(id: Int!): Project
     chat(id: Int!): Chat
     chatMessages(chat_id: Int!): [Message!]!
   }
 
-  type Mutation {
+  extend type Mutation {
     createProject(input: CreateProjectInput!): Project!
     updateProject(id: Int!, input: UpdateProjectInput!): Project!
     deleteProject(id: Int!): Boolean!
