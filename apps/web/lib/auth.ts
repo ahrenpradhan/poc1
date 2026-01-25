@@ -1,69 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { ApolloClient, InMemoryCache, gql, HttpLink } from "@apollo/client";
-
-const client = new ApolloClient({
-  link: new HttpLink({
-    uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || "http://localhost:3000/graphql",
-  }),
-  cache: new InMemoryCache(),
-});
-
-const SIGN_IN_MUTATION = gql`
-  mutation SignIn($email: String!, $password: String!) {
-    signIn(input: { email: $email, password: $password }) {
-      token
-      user {
-        id
-        email
-        created_at
-        updated_at
-        profile {
-          id
-          user_id
-          first_name
-          last_name
-          created_at
-          updated_at
-        }
-      }
-    }
-  }
-`;
-
-const CREATE_USER_MUTATION = gql`
-  mutation CreateUser(
-    $email: String!
-    $password: String!
-    $first_name: String!
-    $last_name: String!
-  ) {
-    createUser(
-      input: {
-        email: $email
-        password: $password
-        first_name: $first_name
-        last_name: $last_name
-      }
-    ) {
-      token
-      user {
-        id
-        email
-        created_at
-        updated_at
-        profile {
-          id
-          user_id
-          first_name
-          last_name
-          created_at
-          updated_at
-        }
-      }
-    }
-  }
-`;
+import { graphqlClient } from "@/graphql/client";
+import { SIGN_IN_MUTATION, CREATE_USER_MUTATION } from "@/graphql/queries";
 
 export const authOptions: NextAuthOptions = {
   debug: true,
@@ -81,7 +19,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const { data } = await client.mutate({
+          const { data } = await graphqlClient.mutate({
             mutation: SIGN_IN_MUTATION,
             variables: {
               email: credentials.email,
@@ -126,7 +64,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const { data } = await client.mutate({
+          const { data } = await graphqlClient.mutate({
             mutation: CREATE_USER_MUTATION,
             variables: {
               email: credentials.email,

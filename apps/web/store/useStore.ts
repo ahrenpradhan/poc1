@@ -18,11 +18,38 @@ export interface Profile {
   deleted_at: string | null;
 }
 
+export interface Plan {
+  id: number;
+  title: string;
+  description: string | null;
+  price: number;
+  currency: string;
+  interval: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserPlan {
+  id: number;
+  user_id: number;
+  plan_id: number;
+  status: string;
+  started_at: string;
+  ends_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+  plan: Plan | null;
+}
+
 interface StoreState {
   user: User | null;
   profile: Profile | null;
+  userPlan: UserPlan | null;
   setUser: (user: User | null) => void;
   setProfile: (profile: Profile | null) => void;
+  setUserPlan: (userPlan: UserPlan | null) => void;
   clearStore: () => void;
 }
 
@@ -31,9 +58,12 @@ export const useStore = create<StoreState>()(
     (set) => ({
       user: null,
       profile: null,
+      userPlan: null,
       setUser: (user) => set({ user }, false, "setUser"),
       setProfile: (profile) => set({ profile }, false, "setProfile"),
-      clearStore: () => set({ user: null, profile: null }, false, "clearStore"),
+      setUserPlan: (userPlan) => set({ userPlan }, false, "setUserPlan"),
+      clearStore: () =>
+        set({ user: null, profile: null, userPlan: null }, false, "clearStore"),
     }),
     {
       enabled: process.env.NODE_ENV === "development",

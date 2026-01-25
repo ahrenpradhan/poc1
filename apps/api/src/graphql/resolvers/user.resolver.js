@@ -17,16 +17,17 @@ export const userResolvers = {
           deleted_at: null,
         },
         include: {
-          profile: {
-            where: {
-              deleted_at: null,
-            },
-          },
+          profile: true,
         },
       });
 
       if (!user) {
         throw new Error("User not found");
+      }
+
+      // Filter out soft-deleted profile
+      if (user.profile?.deleted_at) {
+        user.profile = null;
       }
 
       // Fetch user_plan with plan details
@@ -36,16 +37,17 @@ export const userResolvers = {
           deleted_at: null,
         },
         include: {
-          plan: {
-            where: {
-              deleted_at: null,
-            },
-          },
+          plan: true,
         },
         orderBy: {
           created_at: "desc",
         },
       });
+
+      // Filter out soft-deleted plan
+      if (user_plan?.plan?.deleted_at) {
+        user_plan.plan = null;
+      }
 
       return { ...user, user_plan };
     },
@@ -61,16 +63,17 @@ export const userResolvers = {
           deleted_at: null,
         },
         include: {
-          profile: {
-            where: {
-              deleted_at: null,
-            },
-          },
+          profile: true,
         },
       });
 
       if (!user) {
         throw new Error("User not found");
+      }
+
+      // Filter out soft-deleted profile
+      if (user.profile?.deleted_at) {
+        user.profile = null;
       }
 
       return user;
@@ -86,12 +89,15 @@ export const userResolvers = {
           deleted_at: null,
         },
         include: {
-          profile: {
-            where: {
-              deleted_at: null,
-            },
-          },
+          profile: true,
         },
+      });
+
+      // Filter out soft-deleted profiles
+      users.forEach((user) => {
+        if (user.profile?.deleted_at) {
+          user.profile = null;
+        }
       });
 
       return users;
@@ -188,21 +194,18 @@ export const userResolvers = {
           deleted_at: null,
         },
         include: {
-          profile: {
-            where: {
-              deleted_at: null,
-            },
-          },
-          auth_key: {
-            where: {
-              deleted_at: null,
-            },
-          },
+          profile: true,
+          auth_key: true,
         },
       });
 
-      if (!user || !user.auth_key) {
+      if (!user || !user.auth_key || user.auth_key.deleted_at) {
         throw new Error("Invalid email or password");
+      }
+
+      // Filter out soft-deleted profile
+      if (user.profile?.deleted_at) {
+        user.profile = null;
       }
 
       // Verify password

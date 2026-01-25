@@ -5,15 +5,30 @@ import { Sidebar, SidebarProvider } from "@repo/ui/primitives/sidebar";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@repo/ui/primitives/button";
 import { Search } from "lucide-react";
+import { useStore } from "@/store/useStore";
+import { Loading } from "@/components/loading";
 
 export default function Page() {
-  const { data: session } = useSession();
-  const FULL_NAME = [
-    session?.user?.profile?.first_name,
-    session?.user?.profile?.last_name,
-  ]
-    .filter((_) => _)
-    .join(" ");
+  const { data: session, status } = useSession();
+  const { user } = useStore();
+
+  // Gracefully handle loading and unauthenticated states
+  const FULL_NAME = user
+    ? [user.first_name, user.last_name].filter((_) => _).join(" ")
+    : "";
+
+  // Show loading animation while session is loading
+  if (status === "loading") {
+    return (
+      <SidebarProvider defaultOpen={false}>
+        <main className="flex-1 flex flex-col">
+          <Navbar />
+          <Loading />
+        </main>
+      </SidebarProvider>
+    );
+  }
+
   return (
     <SidebarProvider defaultOpen={false}>
       {session && <Sidebar />}

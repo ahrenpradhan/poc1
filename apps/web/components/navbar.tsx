@@ -8,11 +8,13 @@ import { useSidebar } from "@repo/ui/primitives/sidebar";
 import { HelpCircle, PanelLeft, SunMoon, LogOut } from "lucide-react";
 import { LoginModal } from "@/components/login-modal";
 import { SignUpModal } from "@/components/signup-modal";
+import { useStore } from "@/store/useStore";
 
 export function Navbar() {
   const { toggleSidebar } = useSidebar();
   const { theme, setTheme } = useTheme();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
+  const { user } = useStore();
   const [loginOpen, setLoginOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
 
@@ -53,7 +55,7 @@ export function Navbar() {
             {status === "authenticated" ? (
               <>
                 <span className="text-sm text-muted-foreground">
-                  {session?.user?.email}
+                  {user?.email || ""}
                 </span>
                 <Button
                   variant="outline"

@@ -1,5 +1,5 @@
 import { DefaultSession } from "next-auth";
-import { Profile } from "@/store/useStore";
+import { Profile, UserPlan } from "@/store/useStore";
 
 declare module "next-auth" {
   interface Session {
@@ -9,6 +9,7 @@ declare module "next-auth" {
       first_name: string;
       last_name: string;
       profile?: Profile;
+      user_plan?: UserPlan;
     } & DefaultSession["user"];
     backendToken?: string;
   }
@@ -19,6 +20,7 @@ declare module "next-auth" {
     first_name?: string;
     last_name?: string;
     profile?: Profile;
+    user_plan?: UserPlan;
     backendToken?: string;
   }
 }
@@ -30,6 +32,7 @@ declare module "next-auth/jwt" {
     first_name?: string;
     last_name?: string;
     profile?: Profile;
+    user_plan?: UserPlan;
     backendToken?: string;
   }
 }
