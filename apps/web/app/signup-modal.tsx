@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { Button } from "@repo/ui/primitives/button";
 import {
   Dialog,
@@ -16,9 +17,13 @@ interface SignUpModalProps {
 }
 
 export function SignUpModal({ open, onOpenChange }: SignUpModalProps) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const validatePassword = (pwd: string): string[] => {
     const validationErrors: string[] = [];
@@ -36,12 +41,46 @@ export function SignUpModal({ open, onOpenChange }: SignUpModalProps) {
     return validationErrors;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors([]);
+
     const validationErrors = validatePassword(password);
     if (password !== confirmPassword) {
       validationErrors.push("Passwords do not match");
     }
-    setErrors(validationErrors);
+
+    if (validationErrors.length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await signIn("signup", {
+        email,
+        password,
+        firstName,
+        lastName,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setErrors(["Sign up failed. Please try again."]);
+      } else if (result?.ok) {
+        onOpenChange(false);
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+      }
+    } catch (err) {
+      setErrors(["An error occurred"]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,23 +94,32 @@ export function SignUpModal({ open, onOpenChange }: SignUpModalProps) {
             You'll get smarter responses and can upload files, images, and more.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 mt-8">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-8">
           <div className="flex gap-4">
             <input
               type="text"
               placeholder="First name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               className="w-full bg-muted rounded-2xl px-4 py-3 text-lg outline-none placeholder:text-muted-foreground"
+              required
             />
             <input
               type="text"
               placeholder="Last name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
               className="w-full bg-muted rounded-2xl px-4 py-3 text-lg outline-none placeholder:text-muted-foreground"
+              required
             />
           </div>
           <input
             type="email"
             placeholder="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-muted rounded-2xl px-4 py-3 text-lg outline-none placeholder:text-muted-foreground"
+            required
           />
           <input
             type="password"
@@ -79,6 +127,7 @@ export function SignUpModal({ open, onOpenChange }: SignUpModalProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-muted rounded-2xl px-4 py-3 text-lg outline-none placeholder:text-muted-foreground"
+            required
           />
           <input
             type="password"
@@ -86,6 +135,7 @@ export function SignUpModal({ open, onOpenChange }: SignUpModalProps) {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="w-full bg-muted rounded-2xl px-4 py-3 text-lg outline-none placeholder:text-muted-foreground"
+            required
           />
           {errors.length > 0 && (
             <div className="text-sm text-red-500 space-y-1">
@@ -95,12 +145,13 @@ export function SignUpModal({ open, onOpenChange }: SignUpModalProps) {
             </div>
           )}
           <Button
+            type="submit"
+            disabled={loading}
             className="w-full rounded-full py-6 text-lg font-medium"
-            onClick={handleSubmit}
           >
-            Continue
+            {loading ? "Creating account..." : "Continue"}
           </Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

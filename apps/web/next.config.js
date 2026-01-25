@@ -13,13 +13,18 @@ const nextConfig = {
   experimental: {
     turbo: {
       resolveAlias: {
-        "@": path.resolve(__dirname, "../../packages/ui/src"),
+        "@": [
+          path.resolve(__dirname, "./"),
+          path.resolve(__dirname, "../../packages/ui/src"),
+        ],
       },
     },
   },
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   },
 };
 

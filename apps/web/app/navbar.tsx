@@ -2,20 +2,26 @@
 
 import { useState } from "react";
 import { useTheme } from "next-themes";
+import { useSession, signOut } from "next-auth/react";
 import { Button } from "@repo/ui/primitives/button";
 import { useSidebar } from "@repo/ui/primitives/sidebar";
-import { HelpCircle, PanelLeft, SunMoon } from "lucide-react";
+import { HelpCircle, PanelLeft, SunMoon, LogOut } from "lucide-react";
 import { LoginModal } from "./login-modal";
 import { SignUpModal } from "./signup-modal";
 
 export function Navbar() {
   const { toggleSidebar } = useSidebar();
   const { theme, setTheme } = useTheme();
+  const { data: session, status } = useSession();
   const [loginOpen, setLoginOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
   };
 
   return (
@@ -42,21 +48,40 @@ export function Navbar() {
             >
               <SunMoon className="h-5 w-5" />
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-              onClick={() => setLoginOpen(true)}
-            >
-              Log in
-            </Button>
-            <Button
-              size="sm"
-              className="rounded-full"
-              onClick={() => setSignUpOpen(true)}
-            >
-              Sign up for free
-            </Button>
+            {status === "authenticated" ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  {session?.user?.email}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full gap-2"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => setLoginOpen(true)}
+                >
+                  Log in
+                </Button>
+                <Button
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => setSignUpOpen(true)}
+                >
+                  Sign up for free
+                </Button>
+              </>
+            )}
             <Button variant="ghost" size="icon" className="rounded-full">
               <HelpCircle className="h-5 w-5" />
             </Button>
