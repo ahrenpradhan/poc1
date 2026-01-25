@@ -18,6 +18,14 @@ const SIGN_IN_MUTATION = gql`
         email
         created_at
         updated_at
+        profile {
+          id
+          user_id
+          first_name
+          last_name
+          created_at
+          updated_at
+        }
       }
     }
   }
@@ -39,11 +47,26 @@ const CREATE_USER_MUTATION = gql`
       }
     ) {
       token
+      user {
+        id
+        email
+        created_at
+        updated_at
+        profile {
+          id
+          user_id
+          first_name
+          last_name
+          created_at
+          updated_at
+        }
+      }
     }
   }
 `;
 
 export const authOptions: NextAuthOptions = {
+  debug: true,
   providers: [
     CredentialsProvider({
       id: "credentials",
@@ -65,11 +88,11 @@ export const authOptions: NextAuthOptions = {
               password: credentials.password,
             },
           });
-
           if (data?.signIn?.token && data?.signIn?.user) {
             return {
               id: data.signIn.user.id,
               email: data.signIn.user.email,
+              profile: data.signIn.user.profile,
               backendToken: data.signIn.token,
             };
           }
@@ -113,7 +136,7 @@ export const authOptions: NextAuthOptions = {
 
           if (data?.createUser?.token) {
             return {
-              id: credentials.email,
+              id: credentials.id,
               email: credentials.email,
               backendToken: data.createUser.token,
             };
@@ -129,18 +152,22 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
+      console.log("jwt>>", token, user);
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        token.profile = user.profile;
         token.backendToken = (user as any).backendToken;
       }
       return token;
     },
     async session({ session, token }) {
+      // console.log(">session>>", session, token);
       if (token) {
         session.user = {
           id: token.id as string,
           email: token.email as string,
+          profile: token.profile as string,
         };
         (session as any).backendToken = token.backendToken;
       }

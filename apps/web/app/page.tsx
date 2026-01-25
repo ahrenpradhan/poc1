@@ -8,7 +8,12 @@ import { Search } from "lucide-react";
 
 export default function Page() {
   const { data: session } = useSession();
-
+  const FULL_NAME = [
+    session?.user?.profile?.first_name,
+    session?.user?.profile?.last_name,
+  ]
+    .filter((_) => _)
+    .join(" ");
   return (
     <SidebarProvider defaultOpen={false}>
       {session && <Sidebar />}
@@ -17,7 +22,8 @@ export default function Page() {
         <div className="flex-1 flex flex-col items-center justify-center p-8">
           <div className="w-full max-w-3xl space-y-8">
             <h1 className="text-4xl font-light text-center">
-              This is Cortex, how can I help you?
+              {FULL_NAME ? `Hi ${FULL_NAME}` : "This is Cortex"}, how can I help
+              you?
             </h1>
             <div className="bg-muted rounded-3xl p-6 space-y-4">
               <input
