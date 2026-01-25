@@ -5,13 +5,16 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node server.js",
-    "start": "node server.js"
+    "kill-port": "./scripts/kill-port.sh",
+    "dev": "./scripts/kill-port.sh && node server.js",
+    "start": "./scripts/kill-port.sh && node server.js"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
+    "bcrypt": "^5.1.1",
     "db": "*",
     "fastify": "^5.7.1",
+    "jsonwebtoken": "^9.0.2",
     "mercurius": "^16.7.0"
   }
 }

@@ -1,135 +1,110 @@
-# Turborepo starter
+# POC1 - GraphQL API with Prisma ORM
 
-This Turborepo starter is maintained by the Turborepo core team.
+A monorepo project with GraphQL API and shared database package using Prisma ORM.
 
-## Using this example
-
-Run the following command:
-
-```sh
-npx create-turbo@latest
-```
-
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+## Project Structure
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+poc1/
+├── .env                    # Centralized environment variables (gitignored)
+├── .env.example            # Environment variables template
+├── packages/
+│   └── db/                 # Shared database package
+│       ├── prisma/
+│       │   └── schema.prisma
+│       ├── index.js
+│       └── prisma.config.ts
+│
+└── apps/
+    └── api/                # GraphQL API server
+        ├── src/
+        │   ├── graphql/
+        │   ├── middleware/
+        │   └── utils/
+        └── server.js
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Environment Variables
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+**All environment variables are managed in a single `.env` file at the project root.**
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+This ensures consistency across all packages and apps in the monorepo.
 
-### Develop
+### Setup
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+1. Copy the example file:
+```bash
+cp .env.example .env
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+2. Update the values in `.env`:
+```env
+# Database Configuration
+DATABASE_URL="mysql://root:password@localhost:3306/ai_app"
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+# JWT Authentication
+JWT_SECRET="your-secret-key-change-in-production"
 ```
 
-### Remote Caching
+### How it works
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+- Both `packages/db` and `apps/api` automatically load environment variables from the root `.env` file
+- No need for multiple `.env` files in different packages
+- Centralized configuration management
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+## Quick Start
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+### Prerequisites
+- Node.js v24.13.0 (use `nvm use 24`)
+- MySQL database running
 
-```
-cd my-turborepo
+### Installation
 
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+1. Install dependencies:
+```bash
+npm install
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+2. Set up environment variables (see above)
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+3. Create the database and run migrations:
+```bash
+cd packages/db
+npx prisma migrate dev
 ```
 
-## Useful Links
+4. Start the API server:
+```bash
+cd apps/api
+node server.js
+```
 
-Learn more about the power of Turborepo:
+The server will be available at:
+- API: `http://localhost:3000`
+- GraphiQL: `http://localhost:3000/graphiql`
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+## Documentation
+
+- [Setup Summary](./SETUP_SUMMARY.md) - Complete setup documentation
+- [API Documentation](./apps/api/README.md) - GraphQL API documentation
+
+## Features
+
+- ✅ GraphQL API with Fastify + Mercurius
+- ✅ Prisma ORM with MySQL (MariaDB adapter)
+- ✅ JWT Authentication
+- ✅ Password hashing with bcrypt
+- ✅ Centralized environment configuration
+- ✅ Monorepo structure with shared packages
+- ✅ Snake_case database naming convention
+
+## Tech Stack
+
+- **Runtime**: Node.js v24.13.0
+- **API Framework**: Fastify
+- **GraphQL**: Mercurius
+- **ORM**: Prisma 7.3.0
+- **Database**: MySQL (via MariaDB driver)
+- **Authentication**: JWT + bcrypt
+- **Package Manager**: npm
+- **Monorepo**: Turborepo

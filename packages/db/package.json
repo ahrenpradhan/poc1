@@ -3,14 +3,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.js"
+    ".": "./index.js"
   },
   "scripts": {
     "generate": "prisma generate",
     "migrate": "prisma migrate dev"
   },
   "dependencies": {
+    "@prisma/adapter-mariadb": "^7.3.0",
     "@prisma/client": "^7.3.0",
+    "dotenv": "^16.4.7",
+    "mariadb": "^3.3.2",
     "prisma": "^7.3.0"
   }
 }

@@ -1,32 +1,61 @@
-'use strict'
+import Fastify from "fastify";
+import mercurius from "mercurius";
+import cors from "@fastify/cors";
+import { db as prisma } from "db";
+import { schema } from "./src/graphql/schemas/index.js";
+import { resolvers } from "./src/graphql/resolvers/index.js";
+import { authMiddleware } from "./src/middleware/auth.js";
 
-import Fastify from 'fastify'
-import mercurius from 'mercurius'
+const app = Fastify({
+  logger: true,
+});
 
-const app = Fastify()
+// Register CORS
+await app.register(cors, {
+  origin: true, // Adjust this in production
+});
 
-const schema = `
-  type Query {
-    add(x: Int, y: Int): Int
-  }
-`
-
-const resolvers = {
-  Query: {
-    add: async (_, { x, y }) => x + y
-  }
-}
-
+// Register Mercurius GraphQL
 app.register(mercurius, {
   schema,
-  resolvers
-})
+  resolvers,
+  context: async (request) => {
+    // Add auth middleware
+    const authContext = await authMiddleware(request);
 
-app.get('/', async function (_req, reply) {
-  const query = '{ add(x: 2, y: 2) }'
-  return reply.graphql(query)
-})
+    return {
+      ...authContext,
+      prisma,
+    };
+  },
+  graphiql: true, // Enable GraphiQL interface for development
+});
 
-app.get('/health', async () => ({ ok: true }));
+// Health check endpoint
+app.get("/health", async () => ({ ok: true }));
 
-app.listen({ port: 3000 })
+// Graceful shutdown
+const closeGracefully = async (signal) => {
+  app.log.info(`Received signal to terminate: ${signal}`);
+  await prisma.$disconnect();
+  await app.close();
+  process.exit(0);
+};
+
+process.on("SIGINT", closeGracefully);
+process.on("SIGTERM", closeGracefully);
+
+// Start server
+const start = async () => {
+  try {
+    await app.listen({ port: 3000, host: "0.0.0.0" });
+    app.log.info(`Server running on http://localhost:3000`);
+    app.log.info(`GraphiQL available at http://localhost:3000/graphiql`);
+  } catch (err) {
+    app.log.error(err);
+    await prisma.$disconnect();
+    process.exit(1);
+  }
+};
+
+start();
