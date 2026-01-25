@@ -1,14 +1,17 @@
 {
-  "name": "ui",
+  "name": "@repo/ui",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./components/*": "./src/components/*.tsx",
+    "./old/*": "./src/old/*.tsx",
     "./primitives/*": "./src/primitives/*.tsx",
     "./styles/*": "./src/styles/*",
-    "./lib/*": "./src/lib/*"
+    "./lib/*": "./src/lib/*",
+    "./tailwind.config": "./tailwind.config.js",
+    "./postcss.config": "./postcss.config.js"
   },
   "scripts": {
     "add": "npx shadcn@latest add",

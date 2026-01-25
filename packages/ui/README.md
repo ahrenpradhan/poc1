@@ -147,11 +147,51 @@ import { CustomButton } from "ui/components/custom-button";
 <CustomButton loading={isSubmitting}>Submit</CustomButton>
 ```
 
+## Configuration for Apps
+
+### Tailwind Config
+
+Apps should extend the base Tailwind config from this package:
+
+```ts
+// apps/web/tailwind.config.ts
+import type { Config } from "tailwindcss";
+import baseConfig from "@repo/ui/tailwind.config";
+
+const config: Config = {
+  ...baseConfig,
+  content: [
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "../../packages/ui/src/**/*.{js,ts,jsx,tsx}",
+  ],
+};
+
+export default config;
+```
+
+### PostCSS Config
+
+```js
+// apps/web/postcss.config.mjs
+import baseConfig from "@repo/ui/postcss.config";
+
+export default baseConfig;
+```
+
+### Layout Imports
+
+```tsx
+// apps/web/app/layout.tsx
+import "@repo/ui/styles/globals.css";
+import "./globals.css";
+```
+
 ## Benefits of This Structure
 
 ✅ **Separation of Concerns**: Raw shadcn primitives separated from customizations  
 ✅ **Easy Updates**: Update shadcn components without losing customizations  
 ✅ **Reusability**: Share customized components across all apps  
+✅ **Centralized Config**: Single source of truth for Tailwind/PostCSS  
 ✅ **Type Safety**: Full TypeScript support  
 ✅ **Maintainability**: Clear structure for component management  
 
