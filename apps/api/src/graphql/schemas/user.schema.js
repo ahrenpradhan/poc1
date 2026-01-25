@@ -5,6 +5,7 @@ export const userSchema = `
     created_at: String!
     updated_at: String!
     profile: Profile
+    user_plan: UserPlan
   }
 
   type Profile {
@@ -14,6 +15,31 @@ export const userSchema = `
     last_name: String
     created_at: String!
     updated_at: String!
+  }
+
+  type Plan {
+    id: Int!
+    title: String!
+    description: String
+    price: Int!
+    currency: String!
+    interval: String!
+    is_active: Boolean!
+    created_at: String!
+    updated_at: String!
+  }
+
+  type UserPlan {
+    id: Int!
+    user_id: Int!
+    plan_id: Int!
+    status: String!
+    started_at: String!
+    ends_at: String
+    cancelled_at: String
+    created_at: String!
+    updated_at: String!
+    plan: Plan
   }
 
   type AuthPayload {
