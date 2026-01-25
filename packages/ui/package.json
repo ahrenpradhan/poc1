@@ -1,26 +1,38 @@
 {
-  "name": "@repo/ui",
+  "name": "ui",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "exports": {
-    "./*": "./src/*.tsx"
+    ".": "./src/index.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./primitives/*": "./src/primitives/*.tsx",
+    "./styles/*": "./src/styles/*",
+    "./lib/*": "./src/lib/*"
   },
   "scripts": {
-    "lint": "eslint . --max-warnings 0",
-    "generate:component": "turbo gen react-component",
-    "check-types": "tsc --noEmit"
-  },
-  "devDependencies": {
-    "@repo/eslint-config": "*",
-    "@repo/typescript-config": "*",
-    "@types/node": "^22.15.3",
-    "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
-    "eslint": "^9.39.1",
-    "typescript": "5.9.2"
+    "add": "npx shadcn@latest add",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.469.0",
+    "tailwind-merge": "^2.6.0",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "react": "^18.3.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

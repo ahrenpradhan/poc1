@@ -1,0 +1,4 @@
+# Shadcn Primitives
+# Raw shadcn components are imported here
+# DO NOT modify these files directly
+# Use src/components for customized versions

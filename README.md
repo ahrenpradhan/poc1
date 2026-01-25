@@ -9,11 +9,19 @@ poc1/
 ├── .env                    # Centralized environment variables (gitignored)
 ├── .env.example            # Environment variables template
 ├── packages/
-│   └── db/                 # Shared database package
-│       ├── prisma/
-│       │   └── schema.prisma
-│       ├── index.js
-│       └── prisma.config.ts
+│   ├── db/                 # Shared database package
+│   │   ├── prisma/
+│   │   │   └── schema.prisma
+│   │   ├── index.js
+│   │   └── prisma.config.ts
+│   │
+│   └── ui/                 # Shared UI components (shadcn + Tailwind)
+│       ├── src/
+│       │   ├── primitives/     # Raw shadcn components
+│       │   ├── components/     # Customized components
+│       │   ├── lib/
+│       │   └── styles/
+│       └── components.json
 │
 └── apps/
     └── api/                # GraphQL API server
@@ -112,6 +120,8 @@ npm run studio
 
 - [Setup Summary](./SETUP_SUMMARY.md) - Complete setup documentation
 - [API Documentation](./apps/api/README.md) - GraphQL API documentation
+- [UI Components](./packages/ui/README.md) - UI component library guide
+- [Shadcn Quick Reference](./packages/ui/COMPONENTS.md) - Component commands
 
 ## Features
 
