@@ -7,14 +7,14 @@ import { Search } from "lucide-react";
 
 export default function Page() {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <Sidebar />
       <main className="flex-1 flex flex-col">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8">
           <div className="w-full max-w-3xl space-y-8">
             <h1 className="text-4xl font-light text-center">
-              What can I help with?
+              This is Cortex, how can I help you?
             </h1>
             <div className="bg-muted rounded-3xl p-6 space-y-4">
               <input
@@ -32,7 +32,7 @@ export default function Page() {
           </div>
         </div>
         <footer className="text-center text-sm text-muted-foreground pb-4">
-          By messaging ChatGPT, an AI chatbot, you agree to our{" "}
+          By messaging Cortex, an AI chatbot, you agree to our{" "}
           <a href="#" className="underline">
             Terms
           </a>{" "}

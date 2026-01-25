@@ -1,16 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import { Button } from "@repo/ui/primitives/button";
 import { useSidebar } from "@repo/ui/primitives/sidebar";
-import { ChevronDown, HelpCircle, PanelLeft } from "lucide-react";
+import { HelpCircle, PanelLeft, SunMoon } from "lucide-react";
 import { LoginModal } from "./login-modal";
 import { SignUpModal } from "./signup-modal";
 
 export function Navbar() {
   const { toggleSidebar } = useSidebar();
+  const { theme, setTheme } = useTheme();
   const [loginOpen, setLoginOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   return (
     <>
@@ -25,12 +31,17 @@ export function Navbar() {
             >
               <PanelLeft className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-1 font-medium">
-              ChatGPT
-              <ChevronDown className="h-4 w-4" />
-            </div>
+            <div className="flex items-center gap-1 font-medium">Cortex</div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-lg"
+              onClick={toggleTheme}
+            >
+              <SunMoon className="h-5 w-5" />
+            </Button>
             <Button
               variant="outline"
               size="sm"
