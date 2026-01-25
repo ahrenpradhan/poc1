@@ -8,6 +8,7 @@
     "./components/*": "./src/components/*.tsx",
     "./old/*": "./src/old/*.tsx",
     "./primitives/*": "./src/primitives/*.tsx",
+    "./hooks/*": "./src/hooks/*.tsx",
     "./styles/*": "./src/styles/*",
     "./lib/*": "./src/lib/*",
     "./tailwind.config": "./tailwind.config.js",
@@ -18,7 +19,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.469.0",
