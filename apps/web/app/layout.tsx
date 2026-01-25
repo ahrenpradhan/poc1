@@ -4,6 +4,7 @@ import "@repo/ui/styles/globals.css";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthSessionProvider } from "@/lib/session-provider";
+import { StoreInitializer } from "@/components/store-initializer";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -30,7 +31,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground`}
       >
         <AuthSessionProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <StoreInitializer />
+            {children}
+          </ThemeProvider>
         </AuthSessionProvider>
       </body>
     </html>

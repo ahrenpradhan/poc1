@@ -92,6 +92,8 @@ export const authOptions: NextAuthOptions = {
             return {
               id: data.signIn.user.id,
               email: data.signIn.user.email,
+              first_name: data.signIn.user.profile?.first_name || "",
+              last_name: data.signIn.user.profile?.last_name || "",
               profile: data.signIn.user.profile,
               backendToken: data.signIn.token,
             };
@@ -134,10 +136,13 @@ export const authOptions: NextAuthOptions = {
             },
           });
 
-          if (data?.createUser?.token) {
+          if (data?.createUser?.token && data?.createUser?.user) {
             return {
-              id: credentials.id,
-              email: credentials.email,
+              id: data.createUser.user.id,
+              email: data.createUser.user.email,
+              first_name: data.createUser.user.profile?.first_name || "",
+              last_name: data.createUser.user.profile?.last_name || "",
+              profile: data.createUser.user.profile,
               backendToken: data.createUser.token,
             };
           }
@@ -156,8 +161,10 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        token.first_name = user.first_name;
+        token.last_name = user.last_name;
         token.profile = user.profile;
-        token.backendToken = (user as any).backendToken;
+        token.backendToken = user.backendToken;
       }
       return token;
     },
@@ -167,9 +174,11 @@ export const authOptions: NextAuthOptions = {
         session.user = {
           id: token.id as string,
           email: token.email as string,
-          profile: token.profile as string,
+          first_name: token.first_name || "",
+          last_name: token.last_name || "",
+          profile: token.profile,
         };
-        (session as any).backendToken = token.backendToken;
+        session.backendToken = token.backendToken;
       }
       return session;
     },
