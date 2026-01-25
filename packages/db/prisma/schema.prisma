@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model user {
+  id         Int        @id @default(autoincrement())
+  email      String     @unique
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  profile    profile?
+  auth_key   auth_key?
+  user_plans user_plan[]
+}
+
+model profile {
+  id         Int       @id @default(autoincrement())
+  user_id    Int       @unique
+  first_name String
+  last_name  String?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  user       user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model auth_key {
+  id              Int       @id @default(autoincrement())
+  user_id         Int       @unique
+  hashed_password String    @db.VarChar(255)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  deleted_at      DateTime?
+
+  // Relations
+  user            user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model plan {
+  id          Int        @id @default(autoincrement())
+  title       String     @db.VarChar(255)
+  description String?    @db.Text
+  price       Int        // Store price in cents
+  currency    String     @default("USD") @db.VarChar(3)
+  interval    String     @default("month") @db.VarChar(20) // e.g., "month", "year"
+  is_active   Boolean    @default(true)
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+  deleted_at  DateTime?
+
+  // Relations
+  user_plans  user_plan[]
+}
+
+model user_plan {
+  id           Int       @id @default(autoincrement())
+  user_id      Int
+  plan_id      Int
+  status       String    @default("active") @db.VarChar(20) // e.g., "active", "cancelled", "expired"
+  started_at   DateTime  @default(now())
+  ends_at      DateTime?
+  cancelled_at DateTime?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  deleted_at   DateTime?
+
+  // Relations
+  user         user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  plan         plan      @relation(fields: [plan_id], references: [id], onDelete: Restrict)
+
+  @@index([user_id])
+  @@index([plan_id])
+  @@index([user_id, status])
+}

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
+    "db": "*",
     "fastify": "^5.7.1",
     "mercurius": "^16.7.0"
   }
