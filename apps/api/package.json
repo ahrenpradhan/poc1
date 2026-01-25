@@ -15,6 +15,7 @@
     "db": "*",
     "fastify": "^5.7.1",
     "jsonwebtoken": "^9.0.2",
-    "mercurius": "^16.7.0"
+    "mercurius": "^16.7.0",
+    "uuidv7": "^1.1.0"
   }
 }

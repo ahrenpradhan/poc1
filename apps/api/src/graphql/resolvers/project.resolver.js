@@ -1,3 +1,5 @@
+import { uuidv7 } from "uuidv7";
+
 export const projectResolvers = {
   Query: {
     projects: async (_, __, context) => {
@@ -46,14 +48,12 @@ export const projectResolvers = {
       const chat = await context.prisma.chat.findFirst({
         where: {
           id,
+          owner_id: context.user.userId,
           deleted_at: null,
-        },
-        include: {
-          project: true,
         },
       });
 
-      if (!chat || chat.project.owner_id !== context.user.userId) {
+      if (!chat) {
         throw new Error("Chat not found");
       }
 
@@ -69,14 +69,12 @@ export const projectResolvers = {
       const chat = await context.prisma.chat.findFirst({
         where: {
           id: chat_id,
+          owner_id: context.user.userId,
           deleted_at: null,
-        },
-        include: {
-          project: true,
         },
       });
 
-      if (!chat || chat.project.owner_id !== context.user.userId) {
+      if (!chat) {
         throw new Error("Chat not found");
       }
 
@@ -91,6 +89,24 @@ export const projectResolvers = {
       });
 
       return messages;
+    },
+
+    chatsByOwnerId: async (_, __, context) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      const chats = await context.prisma.chat.findMany({
+        where: {
+          owner_id: context.user.userId,
+          deleted_at: null,
+        },
+        orderBy: {
+          updated_at: "desc",
+        },
+      });
+
+      return chats;
     },
   },
 
@@ -178,34 +194,41 @@ export const projectResolvers = {
         throw new Error("Not authenticated");
       }
 
-      // Verify user owns the project
-      const project = await context.prisma.project.findFirst({
-        where: {
-          id: input.project_id,
-          owner_id: context.user.userId,
-          deleted_at: null,
-        },
-      });
+      // If project_id is provided, verify user owns the project
+      if (input.project_id) {
+        const project = await context.prisma.project.findFirst({
+          where: {
+            id: input.project_id,
+            owner_id: context.user.userId,
+            deleted_at: null,
+          },
+        });
 
-      if (!project) {
-        throw new Error("Project not found");
+        if (!project) {
+          throw new Error("Project not found");
+        }
       }
 
       const currentTime = new Date();
 
-      // Generate unique public_id (32 character random string)
-      const crypto = require("crypto");
-      const public_id = crypto.randomBytes(16).toString("hex");
+      // Generate unique public_id using UUID7
+      const public_id = uuidv7();
+
+      const chatData = {
+        owner_id: context.user.userId,
+        public_id: public_id,
+        title: input.title || null,
+        created_at: currentTime,
+        updated_at: currentTime,
+      };
+
+      // Only include project_id if provided
+      if (input.project_id) {
+        chatData.project_id = input.project_id;
+      }
 
       const chat = await context.prisma.chat.create({
-        data: {
-          project_id: input.project_id,
-          owner_id: context.user.userId,
-          public_id: public_id,
-          title: input.title,
-          created_at: currentTime,
-          updated_at: currentTime,
-        },
+        data: chatData,
       });
 
       return chat;
@@ -216,18 +239,16 @@ export const projectResolvers = {
         throw new Error("Not authenticated");
       }
 
-      // Verify ownership through project
+      // Verify ownership
       const existing = await context.prisma.chat.findFirst({
         where: {
           id,
+          owner_id: context.user.userId,
           deleted_at: null,
-        },
-        include: {
-          project: true,
         },
       });
 
-      if (!existing || existing.project.owner_id !== context.user.userId) {
+      if (!existing) {
         throw new Error("Chat not found");
       }
 
@@ -247,18 +268,16 @@ export const projectResolvers = {
         throw new Error("Not authenticated");
       }
 
-      // Verify ownership through project
+      // Verify ownership
       const existing = await context.prisma.chat.findFirst({
         where: {
           id,
+          owner_id: context.user.userId,
           deleted_at: null,
-        },
-        include: {
-          project: true,
         },
       });
 
-      if (!existing || existing.project.owner_id !== context.user.userId) {
+      if (!existing) {
         throw new Error("Chat not found");
       }
 
@@ -278,18 +297,16 @@ export const projectResolvers = {
         throw new Error("Not authenticated");
       }
 
-      // Verify user owns the chat through project
+      // Verify user owns the chat
       const chat = await context.prisma.chat.findFirst({
         where: {
           id: input.chat_id,
+          owner_id: context.user.userId,
           deleted_at: null,
-        },
-        include: {
-          project: true,
         },
       });
 
-      if (!chat || chat.project.owner_id !== context.user.userId) {
+      if (!chat) {
         throw new Error("Chat not found");
       }
 
@@ -320,27 +337,92 @@ export const projectResolvers = {
       return message;
     },
 
+    createNewChatByMessage: async (_, { input }, context) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      // If project_id is provided, verify user owns the project
+      if (input.project_id) {
+        const project = await context.prisma.project.findFirst({
+          where: {
+            id: input.project_id,
+            owner_id: context.user.userId,
+            deleted_at: null,
+          },
+        });
+
+        if (!project) {
+          throw new Error("Project not found");
+        }
+      }
+
+      const currentTime = new Date();
+
+      // Use transaction to create chat and message atomically
+      return await context.prisma.$transaction(async (tx) => {
+        // Generate unique public_id using UUID7
+        const public_id = uuidv7();
+
+        const chatData = {
+          owner_id: context.user.userId,
+          public_id: public_id,
+          title: input.title || null,
+          created_at: currentTime,
+          updated_at: currentTime,
+        };
+
+        // Only include project_id if provided
+        if (input.project_id) {
+          chatData.project_id = input.project_id;
+        }
+
+        // Create the chat
+        const chat = await tx.chat.create({
+          data: chatData,
+        });
+
+        // Create the first message with sequence 1
+        await tx.message.create({
+          data: {
+            chat_id: chat.id,
+            sequence: 1,
+            role: input.role,
+            content: input.content,
+            created_at: currentTime,
+          },
+        });
+
+        // Return chat with messages included
+        return await tx.chat.findUnique({
+          where: { id: chat.id },
+          include: {
+            messages: {
+              where: { deleted_at: null },
+              orderBy: { sequence: "asc" },
+            },
+          },
+        });
+      });
+    },
+
     deleteMessage: async (_, { id }, context) => {
       if (!context.user) {
         throw new Error("Not authenticated");
       }
 
-      // Verify ownership through chat and project
+      // Verify ownership through chat
       const existing = await context.prisma.message.findFirst({
         where: {
           id,
           deleted_at: null,
         },
         include: {
-          chat: {
-            include: {
-              project: true,
-            },
-          },
+          chat: true,
         },
       });
 
-      if (!existing || existing.chat.project.owner_id !== context.user.userId) {
+      if (!existing || existing.chat.owner_id !== context.user.userId) {
         throw new Error("Message not found");
       }
 
@@ -387,6 +469,23 @@ export const projectResolvers = {
         },
         orderBy: {
           sequence: "asc",
+        },
+      });
+    },
+
+    project: async (parent, _, context) => {
+      if (parent.project !== undefined) {
+        return parent.project;
+      }
+
+      if (!parent.project_id) {
+        return null;
+      }
+
+      return context.prisma.project.findFirst({
+        where: {
+          id: parent.project_id,
+          deleted_at: null,
         },
       });
     },

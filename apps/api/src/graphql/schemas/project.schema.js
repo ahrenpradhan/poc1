@@ -12,13 +12,14 @@ export const projectSchema = `
 
   type Chat {
     id: Int!
-    project_id: Int!
+    project_id: Int
     owner_id: Int!
     public_id: String!
     title: String
     created_at: String!
     updated_at: String!
     messages: [Message!]!
+    project: Project
   }
 
   enum MessageRole {
@@ -48,7 +49,7 @@ export const projectSchema = `
   }
 
   input CreateChatInput {
-    project_id: Int!
+    project_id: Int
     title: String
   }
 
@@ -62,11 +63,19 @@ export const projectSchema = `
     content: String!
   }
 
+  input CreateNewChatByMessageInput {
+    project_id: Int
+    title: String
+    role: MessageRole!
+    content: String!
+  }
+
   extend type Query {
     projects: [Project!]!
     project(id: Int!): Project
     chat(id: Int!): Chat
     chatMessages(chat_id: Int!): [Message!]!
+    chatsByOwnerId: [Chat!]!
   }
 
   extend type Mutation {
@@ -79,6 +88,7 @@ export const projectSchema = `
     deleteChat(id: Int!): Boolean!
 
     createMessage(input: CreateMessageInput!): Message!
+    createNewChatByMessage(input: CreateNewChatByMessageInput!): Chat!
     deleteMessage(id: Int!): Boolean!
   }
 `;
