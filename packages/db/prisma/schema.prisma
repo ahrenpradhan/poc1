@@ -7,16 +7,17 @@ datasource db {
 }
 
 model user {
-  id         Int        @id @default(autoincrement())
-  email      String     @unique
-  created_at DateTime   @default(now())
-  updated_at DateTime   @updatedAt
+  id         Int       @id @default(autoincrement())
+  email      String    @unique
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
   // Relations
   profile    profile?
   auth_key   auth_key?
   user_plans user_plan[]
+  projects   project[]
 }
 
 model profile {
@@ -29,7 +30,7 @@ model profile {
   deleted_at DateTime?
 
   // Relations
-  user       user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user user @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model auth_key {
@@ -41,23 +42,23 @@ model auth_key {
   deleted_at      DateTime?
 
   // Relations
-  user            user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user user @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model plan {
-  id          Int        @id @default(autoincrement())
-  title       String     @db.VarChar(255)
-  description String?    @db.Text
-  price       Int        // Store price in cents
-  currency    String     @default("USD") @db.VarChar(3)
-  interval    String     @default("month") @db.VarChar(20) // e.g., "month", "year"
-  is_active   Boolean    @default(true)
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  description String?   @db.Text
+  price       Int // Store price in cents
+  currency    String    @default("USD") @db.VarChar(3)
+  interval    String    @default("month") @db.VarChar(20) // e.g., "month", "year"
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
   deleted_at  DateTime?
 
   // Relations
-  user_plans  user_plan[]
+  user_plans user_plan[]
 }
 
 model user_plan {
@@ -73,10 +74,65 @@ model user_plan {
   deleted_at   DateTime?
 
   // Relations
-  user         user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  plan         plan      @relation(fields: [plan_id], references: [id], onDelete: Restrict)
+  user user @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  plan plan @relation(fields: [plan_id], references: [id], onDelete: Restrict)
 
   @@index([user_id])
   @@index([plan_id])
   @@index([user_id, status])
+}
+
+model project {
+  id          Int     @id @default(autoincrement())
+  user_id     Int
+  title       String  @db.VarChar(255)
+  description String? @db.Text
+  is_archived Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  user  user   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  chats chat[]
+
+  @@index([user_id])
+}
+
+model chat {
+  id         Int     @id @default(autoincrement())
+  project_id Int
+  title      String? @db.VarChar(255)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  project  project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  messages message[]
+
+  @@index([project_id])
+}
+
+enum MessageRole {
+  system
+  user
+  assistant
+}
+
+model message {
+  id      Int         @id @default(autoincrement())
+  chat_id Int
+  role    MessageRole
+  content String      @db.LongText
+
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  // Relations
+  chat chat @relation(fields: [chat_id], references: [id], onDelete: Cascade)
+
+  @@index([chat_id])
 }
