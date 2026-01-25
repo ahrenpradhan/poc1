@@ -29,4 +29,32 @@ const adapter = new PrismaMariaDb({
   connectionLimit: 10,
 });
 
-export const db = new PrismaClient({ adapter });
+export const db = new PrismaClient({ adapter }).$extends({
+  query: {
+    $allModels: {
+      async findMany({ args, query }) {
+        args.where = {
+          deleted_at: null,
+          ...args.where,
+        };
+        return query(args);
+      },
+
+      async findFirst({ args, query }) {
+        args.where = {
+          deleted_at: null,
+          ...args.where,
+        };
+        return query(args);
+      },
+
+      async findUnique({ args, query }) {
+        args.where = {
+          deleted_at: null,
+          ...args.where,
+        };
+        return query(args);
+      },
+    },
+  },
+});
