@@ -103,9 +103,9 @@ model project {
 
 model chat {
   id         Int     @id @default(autoincrement())
-  project_id Int
+  project_id Int?
   owner_id   Int
-  public_id  String  @unique @db.VarChar(32)
+  public_id  String  @unique @db.VarChar(36)
   title      String? @db.VarChar(255)
 
   created_at DateTime  @default(now())
@@ -114,7 +114,7 @@ model chat {
 
   // Relations
   user     user      @relation(fields: [owner_id], references: [id], onDelete: Cascade)
-  project  project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project  project?  @relation(fields: [project_id], references: [id], onDelete: Cascade)
   messages message[]
 
   @@index([project_id])
