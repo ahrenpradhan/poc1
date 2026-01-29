@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@repo/ui/primitives/button";
@@ -28,6 +28,12 @@ export function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const router = useRouter();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-focus the input on mount
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
 
   const [createNewChat, { loading: creatingChat }] = useMutation(
     CREATE_NEW_CHAT_BY_MESSAGE,
@@ -70,6 +76,11 @@ export function ChatInput({
       }
       setMessage("");
     }
+
+    // Refocus after sending - use setTimeout to ensure it happens after React re-render
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -83,6 +94,7 @@ export function ChatInput({
     <div className={className}>
       <div className="bg-muted rounded-3xl p-6 space-y-4">
         <textarea
+          ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}

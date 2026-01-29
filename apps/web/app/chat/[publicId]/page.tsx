@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@apollo/client/react";
-import { Sidebar, SidebarProvider } from "@repo/ui/primitives/sidebar";
 import { Navbar } from "@/components/navbar";
 import { Loading } from "@/components/loading";
 import { ChatMessageList } from "@/components/chat/chat-message-list";
 import { ChatInput } from "@/components/chat/chat-input";
+import { ChatSidebar } from "@/components/chat-sidebar";
 import { GET_CHAT_BY_PUBLIC_ID } from "@/graphql/queries";
 
 interface Message {
@@ -54,12 +54,12 @@ export default function ChatPage() {
   // Show loading while session or chat is loading
   if (sessionStatus === "loading" || loading) {
     return (
-      <SidebarProvider defaultOpen={false}>
-        <main className="flex-1 flex flex-col h-screen">
+      <div className="flex h-screen">
+        <main className="flex-1 flex flex-col">
           <Navbar />
           <Loading />
         </main>
-      </SidebarProvider>
+      </div>
     );
   }
 
@@ -69,9 +69,9 @@ export default function ChatPage() {
   }
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      {session && <Sidebar />}
-      <main className="flex-1 flex flex-col h-screen">
+    <div className="flex h-screen">
+      {session && <ChatSidebar />}
+      <main className="flex-1 flex flex-col">
         <Navbar />
 
         {/* Message list - takes remaining space */}
@@ -101,6 +101,6 @@ export default function ChatPage() {
           .
         </footer>
       </main>
-    </SidebarProvider>
+    </div>
   );
 }

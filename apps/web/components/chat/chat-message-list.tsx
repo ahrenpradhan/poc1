@@ -153,6 +153,7 @@ export function ChatMessageList({
           key={message.id}
           role={message.role}
           content={message.content}
+          created_at={message.created_at}
         />
       ))}
 

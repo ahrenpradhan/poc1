@@ -1,11 +1,11 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { Sidebar, SidebarProvider } from "@repo/ui/primitives/sidebar";
 import { Navbar } from "@/components/navbar";
 import { useStore } from "@/store/useStore";
 import { Loading } from "@/components/loading";
 import { ChatInput } from "@/components/chat/chat-input";
+import { ChatSidebar } from "@/components/chat-sidebar";
 
 export default function Page() {
   const { data: session, status } = useSession();
@@ -19,18 +19,18 @@ export default function Page() {
   // Show loading animation while session is loading
   if (status === "loading") {
     return (
-      <SidebarProvider defaultOpen={false}>
+      <div className="flex h-screen">
         <main className="flex-1 flex flex-col">
           <Navbar />
           <Loading />
         </main>
-      </SidebarProvider>
+      </div>
     );
   }
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      {session && <Sidebar />}
+    <div className="flex h-screen">
+      {session && <ChatSidebar />}
       <main className="flex-1 flex flex-col">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -58,6 +58,6 @@ export default function Page() {
           .
         </footer>
       </main>
-    </SidebarProvider>
+    </div>
   );
 }

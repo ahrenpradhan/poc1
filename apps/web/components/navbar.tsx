@@ -4,14 +4,14 @@ import { useState } from "react";
 import { useTheme } from "next-themes";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@repo/ui/primitives/button";
-import { useSidebar } from "@repo/ui/primitives/sidebar";
 import { HelpCircle, PanelLeft, SunMoon, LogOut } from "lucide-react";
 import { LoginModal } from "@/components/login-modal";
 import { SignUpModal } from "@/components/signup-modal";
 import { useStore } from "@/store/useStore";
+import { useSidebarState } from "@/lib/sidebar-context";
 
 export function Navbar() {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar } = useSidebarState();
   const { theme, setTheme } = useTheme();
   const { status } = useSession();
   const { user } = useStore();
