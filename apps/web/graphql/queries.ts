@@ -1,5 +1,100 @@
 import { gql } from "@apollo/client";
 
+// Chat Queries
+export const GET_CHAT_BY_PUBLIC_ID = gql`
+  query GetChatByPublicId($public_id: String!) {
+    chatByPublicId(public_id: $public_id) {
+      id
+      public_id
+      title
+      created_at
+      updated_at
+    }
+  }
+`;
+
+export const GET_CHAT_MESSAGES_PAGINATED = gql`
+  query GetChatMessagesPaginated(
+    $chat_id: Int!
+    $first: Int
+    $after: String
+    $last: Int
+    $before: String
+  ) {
+    chatMessagesPaginated(
+      chat_id: $chat_id
+      first: $first
+      after: $after
+      last: $last
+      before: $before
+    ) {
+      edges {
+        cursor
+        node {
+          id
+          chat_id
+          sequence
+          role
+          content
+          created_at
+        }
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+      totalCount
+    }
+  }
+`;
+
+export const GET_USER_CHATS = gql`
+  query GetUserChats {
+    chatsByOwnerId {
+      id
+      public_id
+      title
+      created_at
+      updated_at
+    }
+  }
+`;
+
+// Chat Mutations
+export const CREATE_NEW_CHAT_BY_MESSAGE = gql`
+  mutation CreateNewChatByMessage($input: CreateNewChatByMessageInput!) {
+    createNewChatByMessage(input: $input) {
+      id
+      public_id
+      title
+      created_at
+      messages {
+        id
+        sequence
+        role
+        content
+        created_at
+      }
+    }
+  }
+`;
+
+export const CREATE_MESSAGE = gql`
+  mutation CreateMessage($input: CreateMessageInput!) {
+    createMessage(input: $input) {
+      id
+      chat_id
+      sequence
+      role
+      content
+      created_at
+    }
+  }
+`;
+
+// User Queries
 export const ME_QUERY = gql`
   query Me {
     me {

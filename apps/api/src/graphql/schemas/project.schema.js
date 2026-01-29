@@ -37,6 +37,24 @@ export const projectSchema = `
     created_at: String!
   }
 
+  type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+  }
+
+  type MessageEdge {
+    cursor: String!
+    node: Message!
+  }
+
+  type MessageConnection {
+    edges: [MessageEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+  }
+
   input CreateProjectInput {
     title: String!
     description: String
@@ -74,7 +92,10 @@ export const projectSchema = `
     projects: [Project!]!
     project(id: Int!): Project
     chat(id: Int!): Chat
+    chatByPublicId(public_id: String!): Chat
+    chats: [Chat!]!
     chatMessages(chat_id: Int!): [Message!]!
+    chatMessagesPaginated(chat_id: Int!, first: Int, after: String, last: Int, before: String): MessageConnection!
     chatsByOwnerId: [Chat!]!
   }
 

@@ -4,6 +4,7 @@ import "@repo/ui/styles/globals.css";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthSessionProvider } from "@/lib/session-provider";
+import { ApolloClientProvider } from "@/lib/apollo-provider";
 import { StoreInitializer } from "@/components/store-initializer";
 
 const geistSans = localFont({
@@ -31,10 +32,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground`}
       >
         <AuthSessionProvider>
-          <ThemeProvider>
-            <StoreInitializer />
-            {children}
-          </ThemeProvider>
+          <ApolloClientProvider>
+            <ThemeProvider>
+              <StoreInitializer />
+              {children}
+            </ThemeProvider>
+          </ApolloClientProvider>
         </AuthSessionProvider>
       </body>
     </html>

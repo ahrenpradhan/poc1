@@ -40,6 +40,25 @@ export const projectResolvers = {
       return project;
     },
 
+    chats: async (_, __, context) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      const chats = await context.prisma.chat.findFirst({
+        where: {
+          owner_id: context.user.userId,
+          deleted_at: null,
+        },
+      });
+
+      if (!chats) {
+        throw new Error("Chat not found");
+      }
+
+      return chats;
+    },
+
     chat: async (_, { id }, context) => {
       if (!context.user) {
         throw new Error("Not authenticated");
@@ -56,6 +75,22 @@ export const projectResolvers = {
       if (!chat) {
         throw new Error("Chat not found");
       }
+
+      return chat;
+    },
+
+    chatByPublicId: async (_, { public_id }, context) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      const chat = await context.prisma.chat.findFirst({
+        where: {
+          public_id,
+          owner_id: context.user.userId,
+          deleted_at: null,
+        },
+      });
 
       return chat;
     },
@@ -89,6 +124,118 @@ export const projectResolvers = {
       });
 
       return messages;
+    },
+
+    chatMessagesPaginated: async (
+      _,
+      { chat_id, first, after, last, before },
+      context,
+    ) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      // Verify user owns the chat
+      const chat = await context.prisma.chat.findFirst({
+        where: {
+          id: chat_id,
+          owner_id: context.user.userId,
+          deleted_at: null,
+        },
+      });
+
+      if (!chat) {
+        throw new Error("Chat not found");
+      }
+
+      // Get total count
+      const totalCount = await context.prisma.message.count({
+        where: {
+          chat_id,
+          deleted_at: null,
+        },
+      });
+
+      // Build query conditions
+      const whereClause = {
+        chat_id,
+        deleted_at: null,
+      };
+
+      // Decode cursor (base64 encoded sequence number)
+      const decodeCursor = (cursor) => {
+        return parseInt(Buffer.from(cursor, "base64").toString("utf-8"), 10);
+      };
+
+      const encodeCursor = (sequence) => {
+        return Buffer.from(sequence.toString()).toString("base64");
+      };
+
+      // Handle cursor-based pagination
+      if (after) {
+        whereClause.sequence = { gt: decodeCursor(after) };
+      }
+      if (before) {
+        whereClause.sequence = {
+          ...whereClause.sequence,
+          lt: decodeCursor(before),
+        };
+      }
+
+      // Determine pagination direction and limit
+      let take = first || last || 20;
+      let orderBy = { sequence: "asc" };
+
+      // For "last" pagination (loading older messages when scrolling up)
+      if (last && !first) {
+        orderBy = { sequence: "desc" };
+      }
+
+      const messages = await context.prisma.message.findMany({
+        where: whereClause,
+        orderBy,
+        take: take + 1, // Fetch one extra to determine if there are more
+      });
+
+      // Check if there are more results
+      const hasMore = messages.length > take;
+      if (hasMore) {
+        messages.pop(); // Remove the extra item
+      }
+
+      // Reverse if we fetched in desc order for "last" pagination
+      if (last && !first) {
+        messages.reverse();
+      }
+
+      // Build edges
+      const edges = messages.map((message) => ({
+        cursor: encodeCursor(message.sequence),
+        node: message,
+      }));
+
+      // Determine page info
+      const pageInfo = {
+        hasNextPage: first ? hasMore : false,
+        hasPreviousPage: last ? hasMore : false,
+        startCursor: edges.length > 0 ? edges[0].cursor : null,
+        endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
+      };
+
+      // If we have after cursor, there are previous pages
+      if (after) {
+        pageInfo.hasPreviousPage = true;
+      }
+      // If we have before cursor, there are next pages
+      if (before) {
+        pageInfo.hasNextPage = true;
+      }
+
+      return {
+        edges,
+        pageInfo,
+        totalCount,
+      };
     },
 
     chatsByOwnerId: async (_, __, context) => {
@@ -367,7 +514,7 @@ export const projectResolvers = {
         const chatData = {
           owner_id: context.user.userId,
           public_id: public_id,
-          title: input.title || null,
+          title: input.title || input.content,
           created_at: currentTime,
           updated_at: currentTime,
         };

@@ -3,10 +3,9 @@
 import { useSession } from "next-auth/react";
 import { Sidebar, SidebarProvider } from "@repo/ui/primitives/sidebar";
 import { Navbar } from "@/components/navbar";
-import { Button } from "@repo/ui/primitives/button";
-import { Search } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { Loading } from "@/components/loading";
+import { ChatInput } from "@/components/chat/chat-input";
 
 export default function Page() {
   const { data: session, status } = useSession();
@@ -40,19 +39,7 @@ export default function Page() {
               {FULL_NAME ? `Hi ${FULL_NAME}` : "This is Cortex"}, how can I help
               you?
             </h1>
-            <div className="bg-muted rounded-3xl p-6 space-y-4">
-              <input
-                type="text"
-                className="w-full bg-transparent outline-none text-lg placeholder:text-muted-foreground"
-                placeholder="Ask anything"
-              />
-              <div className="flex justify-end">
-                <Button size="sm" className="rounded-full gap-2">
-                  <Search className="h-4 w-4" />
-                  Search
-                </Button>
-              </div>
-            </div>
+            <ChatInput mode="create" />
           </div>
         </div>
         <footer className="text-center text-sm text-muted-foreground pb-4">
