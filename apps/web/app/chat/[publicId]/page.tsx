@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useQuery } from "@apollo/client/react";
+import { useQuery, useMutation } from "@apollo/client/react";
 import { Navbar } from "@/components/navbar";
 import { Loading } from "@/components/loading";
 import { ChatMessageList } from "@/components/chat/chat-message-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { ChatSidebar } from "@/components/chat-sidebar";
-import { GET_CHAT_BY_PUBLIC_ID } from "@/graphql/queries";
+import { GET_CHAT_BY_PUBLIC_ID, GENERATE_AI_RESPONSE } from "@/graphql/queries";
 
 interface Message {
   id: number;
@@ -23,15 +23,20 @@ interface Message {
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
   const [newMessages, setNewMessages] = useState<Message[]>([]);
+  const [isAITyping, setIsAITyping] = useState(false);
 
   const publicId = params.publicId as string;
+  const generateAIChatId = searchParams.get("generateAI");
 
-  const { data, loading, error } = useQuery(GET_CHAT_BY_PUBLIC_ID, {
+  const { data, loading } = useQuery(GET_CHAT_BY_PUBLIC_ID, {
     variables: { public_id: publicId },
     skip: !publicId || sessionStatus !== "authenticated",
   });
+
+  const [generateAIResponse] = useMutation(GENERATE_AI_RESPONSE);
 
   const chat = data?.chatByPublicId;
 
@@ -47,8 +52,60 @@ export default function ChatPage() {
     }
   }, [chat, loading, router, sessionStatus]);
 
-  const handleMessageSent = (messages: Message[]) => {
-    setNewMessages((prev) => [...prev, ...messages]);
+  // Handle AI response generation for new chats
+  useEffect(() => {
+    if (generateAIChatId && chat && !isAITyping) {
+      const chatId = parseInt(generateAIChatId, 10);
+      if (chatId === chat.id) {
+        // Clear the URL parameter
+        router.replace(`/chat/${publicId}`, { scroll: false });
+
+        // Generate AI response
+        const generateResponse = async () => {
+          setIsAITyping(true);
+          try {
+            const { data: aiData } = await generateAIResponse({
+              variables: {
+                input: {
+                  chat_id: chatId,
+                },
+              },
+            });
+
+            if (aiData?.generateAIResponse) {
+              setNewMessages((prev) => [...prev, aiData.generateAIResponse]);
+            }
+          } finally {
+            setIsAITyping(false);
+          }
+        };
+
+        generateResponse();
+      }
+    }
+  }, [
+    generateAIChatId,
+    chat,
+    publicId,
+    router,
+    generateAIResponse,
+    isAITyping,
+  ]);
+
+  const handleMessageSent = (message: Message) => {
+    setNewMessages((prev) => [...prev, message]);
+  };
+
+  const handleAIResponseReceived = (message: Message) => {
+    setNewMessages((prev) => [...prev, message]);
+  };
+
+  const handleTypingStart = () => {
+    setIsAITyping(true);
+  };
+
+  const handleTypingEnd = () => {
+    setIsAITyping(false);
   };
 
   // Show loading while session or chat is loading
@@ -71,25 +128,32 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen">
       {session && <ChatSidebar />}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-w-0">
         <Navbar />
 
         {/* Message list - takes remaining space */}
-        <ChatMessageList chatId={chat.id} newMessages={newMessages} />
+        <ChatMessageList
+          chatId={chat.id}
+          newMessages={newMessages}
+          isAITyping={isAITyping}
+        />
 
         {/* Fixed input at bottom */}
-        <div className="border-t bg-background p-4">
+        <div className="border-t bg-background p-2 sm:p-4">
           <div className="max-w-3xl mx-auto">
             <ChatInput
               mode="reply"
               chatId={chat.id}
               onMessageSent={handleMessageSent}
+              onAIResponseReceived={handleAIResponseReceived}
+              onTypingStart={handleTypingStart}
+              onTypingEnd={handleTypingEnd}
             />
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="text-center text-xs text-muted-foreground py-2 border-t">
+        {/* Footer - hidden on mobile */}
+        <footer className="hidden sm:block text-center text-xs text-muted-foreground py-2 border-t">
           By messaging Cortex, an AI chatbot, you agree to our{" "}
           <a href="#" className="underline">
             Terms

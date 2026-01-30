@@ -5,7 +5,16 @@ import { useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@repo/ui/primitives/button";
 import { Search, Send } from "lucide-react";
-import { CREATE_NEW_CHAT_BY_MESSAGE, CREATE_MESSAGE } from "@/graphql/queries";
+import {
+  CREATE_NEW_CHAT_BY_MESSAGE,
+  CREATE_MESSAGE,
+  GENERATE_AI_RESPONSE,
+} from "@/graphql/queries";
+import {
+  REFOCUS_DELAY,
+  INPUT_MAX_HEIGHT,
+  INPUT_MAX_HEIGHT_MOBILE,
+} from "@/lib/constants";
 
 interface Message {
   id: number;
@@ -18,7 +27,10 @@ interface Message {
 interface ChatInputProps {
   mode: "create" | "reply";
   chatId?: number;
-  onMessageSent?: (messages: Message[]) => void;
+  onMessageSent?: (message: Message) => void;
+  onAIResponseReceived?: (message: Message) => void;
+  onTypingStart?: () => void;
+  onTypingEnd?: () => void;
   className?: string;
 }
 
@@ -26,6 +38,9 @@ export function ChatInput({
   mode,
   chatId,
   onMessageSent,
+  onAIResponseReceived,
+  onTypingStart,
+  onTypingEnd,
   className,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
@@ -42,6 +57,7 @@ export function ChatInput({
   );
   const [createMessage, { loading: sendingMessage }] =
     useMutation(CREATE_MESSAGE);
+  const [generateAIResponse] = useMutation(GENERATE_AI_RESPONSE);
 
   const isLoading = creatingChat || sendingMessage;
 
@@ -60,9 +76,14 @@ export function ChatInput({
       });
 
       if (data?.createNewChatByMessage?.public_id) {
-        router.push(`/chat/${data.createNewChatByMessage.public_id}`);
+        // Store chat id for AI response generation after redirect
+        const newChatId = data.createNewChatByMessage.id;
+        router.push(
+          `/chat/${data.createNewChatByMessage.public_id}?generateAI=${newChatId}`,
+        );
       }
     } else if (mode === "reply" && chatId) {
+      // Step 1: Create user message
       const { data } = await createMessage({
         variables: {
           input: {
@@ -73,17 +94,38 @@ export function ChatInput({
         },
       });
 
-      if (data?.createMessage && onMessageSent) {
-        const { userMessage, assistantMessage } = data.createMessage;
-        onMessageSent([userMessage, assistantMessage]);
+      if (data?.createMessage) {
+        // Immediately show user message
+        onMessageSent?.(data.createMessage);
+        setMessage("");
+
+        // Step 2: Start typing indicator
+        onTypingStart?.();
+
+        try {
+          // Step 3: Generate AI response
+          const { data: aiData } = await generateAIResponse({
+            variables: {
+              input: {
+                chat_id: chatId,
+              },
+            },
+          });
+
+          if (aiData?.generateAIResponse) {
+            onAIResponseReceived?.(aiData.generateAIResponse);
+          }
+        } finally {
+          // Step 4: End typing indicator
+          onTypingEnd?.();
+        }
       }
-      setMessage("");
     }
 
     // Refocus after sending - use setTimeout to ensure it happens after React re-render
     setTimeout(() => {
       textareaRef.current?.focus();
-    }, 0);
+    }, REFOCUS_DELAY);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -95,13 +137,19 @@ export function ChatInput({
 
   return (
     <div className={className}>
-      <div className="bg-muted rounded-3xl p-6 space-y-4">
+      <div className="bg-muted rounded-2xl sm:rounded-3xl p-3 sm:p-6 space-y-3 sm:space-y-4">
         <textarea
           ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full bg-transparent outline-none text-lg placeholder:text-muted-foreground resize-none min-h-[24px] max-h-[200px]"
+          className="w-full bg-transparent outline-none text-base sm:text-lg placeholder:text-muted-foreground resize-none min-h-[24px]"
+          style={{
+            maxHeight:
+              typeof window !== "undefined" && window.innerWidth < 640
+                ? INPUT_MAX_HEIGHT_MOBILE
+                : INPUT_MAX_HEIGHT,
+          }}
           placeholder="Ask anything"
           rows={1}
           disabled={isLoading}
@@ -116,12 +164,12 @@ export function ChatInput({
             {mode === "create" ? (
               <>
                 <Search className="h-4 w-4" />
-                Search
+                <span className="hidden sm:inline">Search</span>
               </>
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                Send
+                <span className="hidden sm:inline">Send</span>
               </>
             )}
           </Button>

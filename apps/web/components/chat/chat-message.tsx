@@ -1,6 +1,10 @@
 "use client";
 
 import { cn } from "@repo/ui/lib/utils";
+import {
+  MESSAGE_MAX_WIDTH_MOBILE,
+  MESSAGE_MAX_WIDTH_DESKTOP,
+} from "@/lib/constants";
 
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
@@ -73,15 +77,23 @@ export function ChatMessage({
     >
       <div
         className={cn(
-          "max-w-[80%] rounded-2xl px-4 py-3",
+          "rounded-2xl px-3 py-2 sm:px-4 sm:py-3",
           isUser
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-foreground",
         )}
+        style={{
+          maxWidth:
+            typeof window !== "undefined" && window.innerWidth < 640
+              ? MESSAGE_MAX_WIDTH_MOBILE
+              : MESSAGE_MAX_WIDTH_DESKTOP,
+        }}
       >
-        <p className="whitespace-pre-wrap break-words">{content}</p>
+        <p className="whitespace-pre-wrap break-words text-sm sm:text-base">
+          {content}
+        </p>
       </div>
-      <span className="text-xs text-muted-foreground mt-1 px-1">
+      <span className="text-[10px] sm:text-xs text-muted-foreground mt-1 px-1">
         {formatTime(created_at)}
       </span>
     </div>

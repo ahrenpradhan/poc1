@@ -50,6 +50,39 @@ export const GET_CHAT_MESSAGES_PAGINATED = gql`
   }
 `;
 
+export const GET_CHAT_MESSAGES_BY_USER_COUNT = gql`
+  query GetChatMessagesByUserCount(
+    $chat_id: Int!
+    $userMessageCount: Int
+    $beforeSequence: Int
+  ) {
+    chatMessagesByUserCount(
+      chat_id: $chat_id
+      userMessageCount: $userMessageCount
+      beforeSequence: $beforeSequence
+    ) {
+      edges {
+        cursor
+        node {
+          id
+          chat_id
+          sequence
+          role
+          content
+          created_at
+        }
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+      totalCount
+    }
+  }
+`;
+
 export const GET_USER_CHATS = gql`
   query GetUserChats {
     chatsByOwnerId {
@@ -84,22 +117,25 @@ export const CREATE_NEW_CHAT_BY_MESSAGE = gql`
 export const CREATE_MESSAGE = gql`
   mutation CreateMessage($input: CreateMessageInput!) {
     createMessage(input: $input) {
-      userMessage {
-        id
-        chat_id
-        sequence
-        role
-        content
-        created_at
-      }
-      assistantMessage {
-        id
-        chat_id
-        sequence
-        role
-        content
-        created_at
-      }
+      id
+      chat_id
+      sequence
+      role
+      content
+      created_at
+    }
+  }
+`;
+
+export const GENERATE_AI_RESPONSE = gql`
+  mutation GenerateAIResponse($input: GenerateAIResponseInput!) {
+    generateAIResponse(input: $input) {
+      id
+      chat_id
+      sequence
+      role
+      content
+      created_at
     }
   }
 `;

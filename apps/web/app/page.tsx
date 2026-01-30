@@ -31,18 +31,18 @@ export default function Page() {
   return (
     <div className="flex h-screen">
       {session && <ChatSidebar />}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-w-0">
         <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <div className="w-full max-w-3xl space-y-8">
-            <h1 className="text-4xl font-light text-center">
+        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+          <div className="w-full max-w-3xl space-y-6 sm:space-y-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-center px-2">
               {FULL_NAME ? `Hi ${FULL_NAME}` : "This is Cortex"}, how can I help
               you?
             </h1>
             <ChatInput mode="create" />
           </div>
         </div>
-        <footer className="text-center text-sm text-muted-foreground pb-4">
+        <footer className="text-center text-xs sm:text-sm text-muted-foreground pb-4 px-4">
           By messaging Cortex, an AI chatbot, you agree to our{" "}
           <a href="#" className="underline">
             Terms
@@ -51,11 +51,14 @@ export default function Page() {
           <a href="#" className="underline">
             Privacy Policy
           </a>
-          . See{" "}
-          <a href="#" className="underline">
-            Cookie Preferences
-          </a>
-          .
+          .{" "}
+          <span className="hidden sm:inline">
+            See{" "}
+            <a href="#" className="underline">
+              Cookie Preferences
+            </a>
+            .
+          </span>
         </footer>
       </main>
     </div>

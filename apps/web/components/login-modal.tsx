@@ -52,22 +52,25 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg bg-card border-border rounded-3xl p-8">
-        <DialogHeader className="space-y-4 text-center">
-          <DialogTitle className="text-3xl font-normal">
+      <DialogContent className="sm:max-w-lg bg-card border-border rounded-2xl sm:rounded-3xl p-4 sm:p-8 mx-4 sm:mx-auto">
+        <DialogHeader className="space-y-2 sm:space-y-4 text-center">
+          <DialogTitle className="text-2xl sm:text-3xl font-normal">
             Log in or sign up
           </DialogTitle>
-          <DialogDescription className="text-lg text-muted-foreground">
+          <DialogDescription className="text-sm sm:text-lg text-muted-foreground">
             You'll get smarter responses and can upload files, images, and more.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-8">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-3 sm:space-y-4 mt-4 sm:mt-8"
+        >
           <input
             type="email"
             placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-muted rounded-2xl px-4 py-3 text-lg outline-none placeholder:text-muted-foreground"
+            className="w-full bg-muted rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-lg outline-none placeholder:text-muted-foreground"
             required
           />
           <div className="relative">
@@ -76,13 +79,13 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-muted rounded-2xl px-4 py-3 pr-12 text-lg outline-none placeholder:text-muted-foreground"
+              className="w-full bg-muted rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 pr-12 text-base sm:text-lg outline-none placeholder:text-muted-foreground"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               {showPassword ? (
                 <EyeOff className="h-5 w-5" />
@@ -95,7 +98,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full py-6 text-lg font-medium"
+            className="w-full rounded-full py-4 sm:py-6 text-base sm:text-lg font-medium"
           >
             {loading ? "Logging in..." : "Continue"}
           </Button>

@@ -1,10 +1,17 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import { GET_CHAT_MESSAGES_PAGINATED } from "@/graphql/queries";
+import { GET_CHAT_MESSAGES_BY_USER_COUNT } from "@/graphql/queries";
 import { ChatMessage } from "./chat-message";
+import { TypingIndicator } from "./typing-indicator";
 import { Loading } from "@/components/loading";
+import {
+  USER_MESSAGE_PAGE_SIZE,
+  VIEWPORT_FILL_DELAY,
+  VIEWPORT_FILL_INTERVAL,
+  INTERSECTION_THRESHOLD,
+} from "@/lib/constants";
 
 interface Message {
   id: number;
@@ -18,33 +25,37 @@ interface Message {
 interface ChatMessageListProps {
   chatId: number;
   newMessages?: Message[];
+  isAITyping?: boolean;
 }
-
-const PAGE_SIZE = 20;
 
 export function ChatMessageList({
   chatId,
   newMessages = [],
+  isAITyping = false,
 }: ChatMessageListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const isInitialLoad = useRef(true);
   const previousScrollHeight = useRef<number>(0);
+  const [isFillingViewport, setIsFillingViewport] = useState(false);
 
-  const { data, loading, fetchMore } = useQuery(GET_CHAT_MESSAGES_PAGINATED, {
-    variables: {
-      chat_id: chatId,
-      last: PAGE_SIZE,
+  const { data, loading, fetchMore } = useQuery(
+    GET_CHAT_MESSAGES_BY_USER_COUNT,
+    {
+      variables: {
+        chat_id: chatId,
+        userMessageCount: USER_MESSAGE_PAGE_SIZE,
+      },
+      notifyOnNetworkStatusChange: true,
     },
-    notifyOnNetworkStatusChange: true,
-  });
+  );
 
   const messages =
-    data?.chatMessagesPaginated?.edges?.map(
+    data?.chatMessagesByUserCount?.edges?.map(
       (edge: { node: Message }) => edge.node,
     ) || [];
-  const pageInfo = data?.chatMessagesPaginated?.pageInfo;
+  const pageInfo = data?.chatMessagesByUserCount?.pageInfo;
 
   // Combine server messages with optimistically added new messages
   const allMessages = [
@@ -54,63 +65,111 @@ export function ChatMessageList({
     ),
   ];
 
-  // Scroll to bottom on initial load and when new messages are added
-  useEffect(() => {
-    if (
-      bottomRef.current &&
-      (isInitialLoad.current || newMessages.length > 0)
-    ) {
-      bottomRef.current.scrollIntoView({
-        behavior: isInitialLoad.current ? "auto" : "smooth",
-      });
-      isInitialLoad.current = false;
-    }
-  }, [allMessages.length, newMessages.length]);
+  // Decode cursor to get sequence number
+  const decodeCursor = (cursor: string) => {
+    return parseInt(Buffer.from(cursor, "base64").toString("utf-8"), 10);
+  };
 
-  // Load more messages when scrolling to top
-  const loadOlderMessages = useCallback(() => {
-    if (!pageInfo?.hasPreviousPage || loading) return;
+  // Load more messages
+  const loadOlderMessages = useCallback(async () => {
+    if (!pageInfo?.hasPreviousPage || loading || isFillingViewport)
+      return false;
 
     const container = scrollContainerRef.current;
     if (container) {
       previousScrollHeight.current = container.scrollHeight;
     }
 
-    fetchMore({
+    // Get the beforeSequence from startCursor
+    const beforeSequence = pageInfo.startCursor
+      ? decodeCursor(pageInfo.startCursor)
+      : undefined;
+
+    const result = await fetchMore({
       variables: {
         chat_id: chatId,
-        last: PAGE_SIZE,
-        before: pageInfo.startCursor,
+        userMessageCount: USER_MESSAGE_PAGE_SIZE,
+        beforeSequence,
       },
       updateQuery: (prev, { fetchMoreResult }) => {
         if (!fetchMoreResult) return prev;
 
-        const newEdges = fetchMoreResult.chatMessagesPaginated.edges;
-        const existingEdges = prev.chatMessagesPaginated.edges;
+        const newEdges = fetchMoreResult.chatMessagesByUserCount.edges;
+        const existingEdges = prev.chatMessagesByUserCount.edges;
 
         return {
-          chatMessagesPaginated: {
-            ...fetchMoreResult.chatMessagesPaginated,
+          chatMessagesByUserCount: {
+            ...fetchMoreResult.chatMessagesByUserCount,
             edges: [...newEdges, ...existingEdges],
             pageInfo: {
-              ...prev.chatMessagesPaginated.pageInfo,
+              ...prev.chatMessagesByUserCount.pageInfo,
               hasPreviousPage:
-                fetchMoreResult.chatMessagesPaginated.pageInfo.hasPreviousPage,
+                fetchMoreResult.chatMessagesByUserCount.pageInfo
+                  .hasPreviousPage,
               startCursor:
-                fetchMoreResult.chatMessagesPaginated.pageInfo.startCursor,
+                fetchMoreResult.chatMessagesByUserCount.pageInfo.startCursor,
             },
           },
         };
       },
-    }).then(() => {
-      // Maintain scroll position after loading older messages
-      const container = scrollContainerRef.current;
-      if (container && previousScrollHeight.current) {
-        const newScrollHeight = container.scrollHeight;
-        container.scrollTop = newScrollHeight - previousScrollHeight.current;
-      }
     });
-  }, [chatId, fetchMore, loading, pageInfo]);
+
+    // Maintain scroll position after loading older messages
+    const containerAfter = scrollContainerRef.current;
+    if (containerAfter && previousScrollHeight.current) {
+      const newScrollHeight = containerAfter.scrollHeight;
+      containerAfter.scrollTop = newScrollHeight - previousScrollHeight.current;
+    }
+
+    return (
+      result.data?.chatMessagesByUserCount?.pageInfo?.hasPreviousPage ?? false
+    );
+  }, [chatId, fetchMore, loading, pageInfo, isFillingViewport]);
+
+  // Fill viewport with messages if needed
+  const fillViewport = useCallback(async () => {
+    const container = scrollContainerRef.current;
+    if (!container || !pageInfo?.hasPreviousPage || loading) return;
+
+    // Check if content doesn't fill the viewport
+    if (container.scrollHeight <= container.clientHeight) {
+      setIsFillingViewport(true);
+      const hasMore = await loadOlderMessages();
+      setIsFillingViewport(false);
+
+      // Continue filling if there are more messages and viewport still not filled
+      if (hasMore) {
+        // Use setTimeout to allow DOM to update
+        setTimeout(() => {
+          fillViewport();
+        }, VIEWPORT_FILL_INTERVAL);
+      }
+    }
+  }, [loadOlderMessages, pageInfo?.hasPreviousPage, loading]);
+
+  // Scroll to bottom on initial load, when new messages are added, or when AI starts typing
+  useEffect(() => {
+    if (
+      bottomRef.current &&
+      (isInitialLoad.current || newMessages.length > 0 || isAITyping)
+    ) {
+      bottomRef.current.scrollIntoView({
+        behavior: isInitialLoad.current ? "auto" : "smooth",
+      });
+      isInitialLoad.current = false;
+    }
+  }, [allMessages.length, newMessages.length, isAITyping]);
+
+  // Fill viewport after initial load
+  useEffect(() => {
+    if (!loading && messages.length > 0 && pageInfo?.hasPreviousPage) {
+      // Small delay to ensure DOM has rendered
+      const timer = setTimeout(() => {
+        fillViewport();
+      }, VIEWPORT_FILL_DELAY);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, messages.length, pageInfo?.hasPreviousPage, fillViewport]);
 
   // Intersection observer for infinite scroll
   useEffect(() => {
@@ -119,16 +178,16 @@ export function ChatMessageList({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) {
+        if (entries[0]?.isIntersecting && !isFillingViewport) {
           loadOlderMessages();
         }
       },
-      { threshold: 0.1 },
+      { threshold: INTERSECTION_THRESHOLD },
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadOlderMessages]);
+  }, [loadOlderMessages, isFillingViewport]);
 
   if (loading && messages.length === 0) {
     return <Loading />;
@@ -137,14 +196,16 @@ export function ChatMessageList({
   return (
     <div
       ref={scrollContainerRef}
-      className="flex-1 overflow-y-auto p-4 space-y-4"
+      className="flex-1 overflow-y-auto px-2 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-2 space-y-3 sm:space-y-4"
     >
       {/* Sentinel for loading older messages */}
       <div ref={topSentinelRef} className="h-1" />
 
-      {loading && messages.length > 0 && (
+      {(loading || isFillingViewport) && messages.length > 0 && (
         <div className="flex justify-center py-2">
-          <div className="text-sm text-muted-foreground">Loading...</div>
+          <div className="text-xs sm:text-sm text-muted-foreground">
+            Loading...
+          </div>
         </div>
       )}
 
@@ -156,6 +217,9 @@ export function ChatMessageList({
           created_at={message.created_at}
         />
       ))}
+
+      {/* Typing indicator */}
+      {isAITyping && <TypingIndicator />}
 
       {/* Bottom anchor for scrolling to latest */}
       <div ref={bottomRef} />

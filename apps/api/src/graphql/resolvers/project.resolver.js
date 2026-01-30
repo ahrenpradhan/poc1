@@ -239,6 +239,110 @@ export const projectResolvers = {
       };
     },
 
+    chatMessagesByUserCount: async (
+      _,
+      { chat_id, userMessageCount = 10, beforeSequence },
+      context,
+    ) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      // Verify user owns the chat
+      const chat = await context.prisma.chat.findFirst({
+        where: {
+          id: chat_id,
+          owner_id: context.user.userId,
+          deleted_at: null,
+        },
+      });
+
+      if (!chat) {
+        throw new Error("Chat not found");
+      }
+
+      // Build where clause for fetching messages
+      const whereClause = {
+        chat_id,
+        deleted_at: null,
+      };
+
+      // If beforeSequence is provided, only get messages before that sequence
+      if (beforeSequence) {
+        whereClause.sequence = { lt: beforeSequence };
+      }
+
+      // Get all messages up to the cursor (or all if no cursor), ordered desc
+      const allMessages = await context.prisma.message.findMany({
+        where: whereClause,
+        orderBy: { sequence: "desc" },
+      });
+
+      // Count user messages and find the cutoff point
+      let userMessagesSeen = 0;
+      let cutoffIndex = allMessages.length; // Default to include all
+
+      for (let i = 0; i < allMessages.length; i++) {
+        if (allMessages[i].role === "user") {
+          userMessagesSeen++;
+          if (userMessagesSeen > userMessageCount) {
+            cutoffIndex = i;
+            break;
+          }
+        }
+      }
+
+      // Get messages from cutoff to end (these are the ones we want)
+      const selectedMessages = allMessages.slice(0, cutoffIndex);
+
+      // Reverse to get ascending order
+      selectedMessages.reverse();
+
+      // Get total count for the chat
+      const totalCount = await context.prisma.message.count({
+        where: {
+          chat_id,
+          deleted_at: null,
+        },
+      });
+
+      // Encode cursor helper
+      const encodeCursor = (sequence) => {
+        return Buffer.from(sequence.toString()).toString("base64");
+      };
+
+      // Build edges
+      const edges = selectedMessages.map((message) => ({
+        cursor: encodeCursor(message.sequence),
+        node: message,
+      }));
+
+      // Determine if there are more messages before
+      const hasPreviousPage = cutoffIndex < allMessages.length;
+
+      // Get the earliest sequence in our result for the next page cursor
+      const startSequence =
+        selectedMessages.length > 0 ? selectedMessages[0].sequence : null;
+
+      const pageInfo = {
+        hasNextPage: false, // We always load from the end, so no next page
+        hasPreviousPage,
+        startCursor: startSequence ? encodeCursor(startSequence) : null,
+        endCursor:
+          selectedMessages.length > 0
+            ? encodeCursor(
+                selectedMessages[selectedMessages.length - 1].sequence,
+              )
+            : null,
+      };
+
+      return {
+        edges,
+        pageInfo,
+        totalCount,
+      };
+    },
+
     chatsByOwnerId: async (_, __, context) => {
       if (!context.user) {
         throw new Error("Not authenticated");
@@ -458,21 +562,6 @@ export const projectResolvers = {
         throw new Error("Chat not found");
       }
 
-      // Get existing messages for conversation history
-      const existingMessages = await context.prisma.message.findMany({
-        where: {
-          chat_id: input.chat_id,
-          deleted_at: null,
-        },
-        orderBy: {
-          sequence: "asc",
-        },
-        select: {
-          role: true,
-          content: true,
-        },
-      });
-
       // Get the next sequence number
       const lastMessage = await context.prisma.message.findFirst({
         where: {
@@ -488,7 +577,7 @@ export const projectResolvers = {
       const currentTime = new Date();
 
       // Create the user message
-      const userMessage = await context.prisma.message.create({
+      const message = await context.prisma.message.create({
         data: {
           chat_id: input.chat_id,
           sequence: nextSequence,
@@ -498,9 +587,67 @@ export const projectResolvers = {
         },
       });
 
+      return message;
+    },
+
+    generateAIResponse: async (_, { input }, context) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      // Verify user owns the chat
+      const chat = await context.prisma.chat.findFirst({
+        where: {
+          id: input.chat_id,
+          owner_id: context.user.userId,
+          deleted_at: null,
+        },
+      });
+
+      if (!chat) {
+        throw new Error("Chat not found");
+      }
+
+      // Get existing messages for conversation history
+      const existingMessages = await context.prisma.message.findMany({
+        where: {
+          chat_id: input.chat_id,
+          deleted_at: null,
+        },
+        orderBy: {
+          sequence: "asc",
+        },
+        select: {
+          role: true,
+          content: true,
+        },
+      });
+
+      // Get the last user message to respond to
+      const lastUserMessage = existingMessages
+        .filter((m) => m.role === "user")
+        .pop();
+
+      if (!lastUserMessage) {
+        throw new Error("No user message to respond to");
+      }
+
+      // Get the next sequence number
+      const lastMessage = await context.prisma.message.findFirst({
+        where: {
+          chat_id: input.chat_id,
+          deleted_at: null,
+        },
+        orderBy: {
+          sequence: "desc",
+        },
+      });
+
+      const nextSequence = lastMessage ? lastMessage.sequence + 1 : 1;
+
       // Generate AI response
       const aiResponse = await aiAdapter.generateResponse(
-        input.content,
+        lastUserMessage.content,
         existingMessages,
       );
 
@@ -508,17 +655,14 @@ export const projectResolvers = {
       const assistantMessage = await context.prisma.message.create({
         data: {
           chat_id: input.chat_id,
-          sequence: nextSequence + 1,
+          sequence: nextSequence,
           role: "assistant",
           content: aiResponse,
           created_at: new Date(),
         },
       });
 
-      return {
-        userMessage,
-        assistantMessage,
-      };
+      return assistantMessage;
     },
 
     createNewChatByMessage: async (_, { input }, context) => {
@@ -574,20 +718,6 @@ export const projectResolvers = {
             role: input.role,
             content: input.content,
             created_at: currentTime,
-          },
-        });
-
-        // Generate AI response
-        const aiResponse = await aiAdapter.generateResponse(input.content, []);
-
-        // Create the assistant message with sequence 2
-        await tx.message.create({
-          data: {
-            chat_id: chat.id,
-            sequence: 2,
-            role: "assistant",
-            content: aiResponse,
-            created_at: new Date(),
           },
         });
 

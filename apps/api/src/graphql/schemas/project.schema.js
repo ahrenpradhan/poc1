@@ -37,9 +37,8 @@ export const projectSchema = `
     created_at: String!
   }
 
-  type CreateMessageResponse {
-    userMessage: Message!
-    assistantMessage: Message!
+  input GenerateAIResponseInput {
+    chat_id: Int!
   }
 
   type PageInfo {
@@ -101,6 +100,7 @@ export const projectSchema = `
     chats: [Chat!]!
     chatMessages(chat_id: Int!): [Message!]!
     chatMessagesPaginated(chat_id: Int!, first: Int, after: String, last: Int, before: String): MessageConnection!
+    chatMessagesByUserCount(chat_id: Int!, userMessageCount: Int, beforeSequence: Int): MessageConnection!
     chatsByOwnerId: [Chat!]!
   }
 
@@ -113,7 +113,8 @@ export const projectSchema = `
     updateChat(id: Int!, input: UpdateChatInput!): Chat!
     deleteChat(id: Int!): Boolean!
 
-    createMessage(input: CreateMessageInput!): CreateMessageResponse!
+    createMessage(input: CreateMessageInput!): Message!
+    generateAIResponse(input: GenerateAIResponseInput!): Message!
     createNewChatByMessage(input: CreateNewChatByMessageInput!): Chat!
     deleteMessage(id: Int!): Boolean!
   }
