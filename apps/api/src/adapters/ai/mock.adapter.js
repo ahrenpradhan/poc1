@@ -10,7 +10,7 @@ export const mockAdapter = {
    * @returns {Promise<string>} The AI response
    */
   async generateResponse(userMessage, _conversationHistory = []) {
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 1500));
     const turn = _conversationHistory.length + 1;
     return `AI (mock): Turn ${turn}. You said: ${userMessage}`;
     // return `AI: ${userMessage}`;

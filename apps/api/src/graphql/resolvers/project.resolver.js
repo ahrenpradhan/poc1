@@ -646,10 +646,10 @@ export const projectResolvers = {
       const nextSequence = lastMessage ? lastMessage.sequence + 1 : 1;
 
       // Generate AI response
-      const aiResponse = await aiAdapter.generateResponse(
-        lastUserMessage.content,
-        existingMessages,
-      );
+
+      const aiResponse = await aiAdapter[
+        input.adapterType || "default"
+      ].generateResponse(lastUserMessage.content, existingMessages);
 
       // Create the assistant message
       const assistantMessage = await context.prisma.message.create({
