@@ -22,4 +22,7 @@ export const resolvers = {
   Chat: {
     ...projectResolvers.Chat,
   },
+  Message: {
+    ...projectResolvers.Message,
+  },
 };

@@ -37,6 +37,11 @@ export const projectSchema = `
     created_at: String!
   }
 
+  type CreateMessageResponse {
+    userMessage: Message!
+    assistantMessage: Message!
+  }
+
   type PageInfo {
     hasNextPage: Boolean!
     hasPreviousPage: Boolean!
@@ -108,7 +113,7 @@ export const projectSchema = `
     updateChat(id: Int!, input: UpdateChatInput!): Chat!
     deleteChat(id: Int!): Boolean!
 
-    createMessage(input: CreateMessageInput!): Message!
+    createMessage(input: CreateMessageInput!): CreateMessageResponse!
     createNewChatByMessage(input: CreateNewChatByMessageInput!): Chat!
     deleteMessage(id: Int!): Boolean!
   }

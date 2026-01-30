@@ -84,12 +84,22 @@ export const CREATE_NEW_CHAT_BY_MESSAGE = gql`
 export const CREATE_MESSAGE = gql`
   mutation CreateMessage($input: CreateMessageInput!) {
     createMessage(input: $input) {
-      id
-      chat_id
-      sequence
-      role
-      content
-      created_at
+      userMessage {
+        id
+        chat_id
+        sequence
+        role
+        content
+        created_at
+      }
+      assistantMessage {
+        id
+        chat_id
+        sequence
+        role
+        content
+        created_at
+      }
     }
   }
 `;

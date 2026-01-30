@@ -47,8 +47,8 @@ export default function ChatPage() {
     }
   }, [chat, loading, router, sessionStatus]);
 
-  const handleMessageSent = (message: Message) => {
-    setNewMessages((prev) => [...prev, message]);
+  const handleMessageSent = (messages: Message[]) => {
+    setNewMessages((prev) => [...prev, ...messages]);
   };
 
   // Show loading while session or chat is loading

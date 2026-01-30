@@ -1,4 +1,5 @@
 import { uuidv7 } from "uuidv7";
+import { aiAdapter } from "../../adapters/ai/index.js";
 
 export const projectResolvers = {
   Query: {
@@ -457,6 +458,21 @@ export const projectResolvers = {
         throw new Error("Chat not found");
       }
 
+      // Get existing messages for conversation history
+      const existingMessages = await context.prisma.message.findMany({
+        where: {
+          chat_id: input.chat_id,
+          deleted_at: null,
+        },
+        orderBy: {
+          sequence: "asc",
+        },
+        select: {
+          role: true,
+          content: true,
+        },
+      });
+
       // Get the next sequence number
       const lastMessage = await context.prisma.message.findFirst({
         where: {
@@ -471,7 +487,8 @@ export const projectResolvers = {
       const nextSequence = lastMessage ? lastMessage.sequence + 1 : 1;
       const currentTime = new Date();
 
-      const message = await context.prisma.message.create({
+      // Create the user message
+      const userMessage = await context.prisma.message.create({
         data: {
           chat_id: input.chat_id,
           sequence: nextSequence,
@@ -481,7 +498,27 @@ export const projectResolvers = {
         },
       });
 
-      return message;
+      // Generate AI response
+      const aiResponse = await aiAdapter.generateResponse(
+        input.content,
+        existingMessages,
+      );
+
+      // Create the assistant message
+      const assistantMessage = await context.prisma.message.create({
+        data: {
+          chat_id: input.chat_id,
+          sequence: nextSequence + 1,
+          role: "assistant",
+          content: aiResponse,
+          created_at: new Date(),
+        },
+      });
+
+      return {
+        userMessage,
+        assistantMessage,
+      };
     },
 
     createNewChatByMessage: async (_, { input }, context) => {
@@ -537,6 +574,20 @@ export const projectResolvers = {
             role: input.role,
             content: input.content,
             created_at: currentTime,
+          },
+        });
+
+        // Generate AI response
+        const aiResponse = await aiAdapter.generateResponse(input.content, []);
+
+        // Create the assistant message with sequence 2
+        await tx.message.create({
+          data: {
+            chat_id: chat.id,
+            sequence: 2,
+            role: "assistant",
+            content: aiResponse,
+            created_at: new Date(),
           },
         });
 
@@ -635,6 +686,26 @@ export const projectResolvers = {
           deleted_at: null,
         },
       });
+    },
+
+    created_at: (parent) => {
+      return parent.created_at instanceof Date
+        ? parent.created_at.toISOString()
+        : parent.created_at;
+    },
+
+    updated_at: (parent) => {
+      return parent.updated_at instanceof Date
+        ? parent.updated_at.toISOString()
+        : parent.updated_at;
+    },
+  },
+
+  Message: {
+    created_at: (parent) => {
+      return parent.created_at instanceof Date
+        ? parent.created_at.toISOString()
+        : parent.created_at;
     },
   },
 };

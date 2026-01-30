@@ -18,7 +18,17 @@ export function ChatMessage({
   const isUser = role === "user";
 
   const formatTime = (timestamp: string) => {
+    if (!timestamp) {
+      return "";
+    }
+
     const date = new Date(timestamp);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return "";
+    }
+
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));

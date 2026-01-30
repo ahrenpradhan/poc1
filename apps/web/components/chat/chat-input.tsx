@@ -7,16 +7,18 @@ import { Button } from "@repo/ui/primitives/button";
 import { Search, Send } from "lucide-react";
 import { CREATE_NEW_CHAT_BY_MESSAGE, CREATE_MESSAGE } from "@/graphql/queries";
 
+interface Message {
+  id: number;
+  sequence: number;
+  role: string;
+  content: string;
+  created_at: string;
+}
+
 interface ChatInputProps {
   mode: "create" | "reply";
   chatId?: number;
-  onMessageSent?: (message: {
-    id: number;
-    sequence: number;
-    role: string;
-    content: string;
-    created_at: string;
-  }) => void;
+  onMessageSent?: (messages: Message[]) => void;
   className?: string;
 }
 
@@ -72,7 +74,8 @@ export function ChatInput({
       });
 
       if (data?.createMessage && onMessageSent) {
-        onMessageSent(data.createMessage);
+        const { userMessage, assistantMessage } = data.createMessage;
+        onMessageSent([userMessage, assistantMessage]);
       }
       setMessage("");
     }
