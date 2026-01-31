@@ -10,3 +10,6 @@ export { cn } from "./lib/utils";
 
 // Export styles (import in your app)
 import "./styles/globals.css";
+
+import { AiTextRenderer } from "./components/aiTextRenderer/index.tsx";
+export { AiTextRenderer };

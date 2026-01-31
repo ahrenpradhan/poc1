@@ -5,6 +5,7 @@ import {
   MESSAGE_MAX_WIDTH_MOBILE,
   MESSAGE_MAX_WIDTH_DESKTOP,
 } from "@/lib/constants";
+import { AiTextRenderer } from "@repo/ui";
 
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
@@ -13,6 +14,52 @@ interface ChatMessageProps {
   className?: string;
 }
 
+const formatTime = (timestamp: string) => {
+  if (!timestamp) {
+    return "";
+  }
+
+  const date = new Date(timestamp);
+
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    return "";
+  }
+
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (days === 0) {
+    // Today - show time
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } else if (days === 1) {
+    // Yesterday
+    return `Yesterday ${date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+  } else if (days < 7) {
+    // This week - show day and time
+    return date.toLocaleDateString([], {
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } else {
+    // Older - show date and time
+    return date.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+};
+
 export function ChatMessage({
   role,
   content,
@@ -20,52 +67,6 @@ export function ChatMessage({
   className,
 }: ChatMessageProps) {
   const isUser = role === "user";
-
-  const formatTime = (timestamp: string) => {
-    if (!timestamp) {
-      return "";
-    }
-
-    const date = new Date(timestamp);
-
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return "";
-    }
-
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) {
-      // Today - show time
-      return date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else if (days === 1) {
-      // Yesterday
-      return `Yesterday ${date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
-    } else if (days < 7) {
-      // This week - show day and time
-      return date.toLocaleDateString([], {
-        weekday: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else {
-      // Older - show date and time
-      return date.toLocaleDateString([], {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-  };
 
   return (
     <div
@@ -89,9 +90,9 @@ export function ChatMessage({
               : MESSAGE_MAX_WIDTH_DESKTOP,
         }}
       >
-        <p className="whitespace-pre-wrap break-words text-sm sm:text-base">
-          {content}
-        </p>
+        <div className="whitespace-pre-wrap break-words text-sm sm:text-base">
+          <AiTextRenderer content={content} config={{}} />
+        </div>
       </div>
       <span className="text-[10px] sm:text-xs text-muted-foreground mt-1 px-1">
         {formatTime(created_at)}

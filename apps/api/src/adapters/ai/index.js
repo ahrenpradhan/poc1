@@ -8,5 +8,6 @@ import { ollamaAdapter } from "./ollamaAdapter.ts";
 export const aiAdapter = {
   mock: mockAdapter,
   ollama: ollamaAdapter,
-  default: mockAdapter,
+  default: ollamaAdapter,
+  // default: mockAdapter,
 };
