@@ -1,10 +1,10 @@
 import fetch from "node-fetch";
 
 class OllamaAdapterClass {
-  private baseUrl = "http://localhost:11434";
-  private model = "mistral";
+  baseUrl = "http://localhost:11434";
+  model = "mistral";
 
-  async *stream(prompt: string): AsyncGenerator<string> {
+  async *stream(prompt) {
     const response = await fetch(`${this.baseUrl}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -22,8 +22,7 @@ class OllamaAdapterClass {
     const decoder = new TextDecoder();
     let buffer = "";
 
-    // ✅ Node.js streaming consumption
-    for await (const chunk of response.body as any) {
+    for await (const chunk of response.body) {
       buffer += decoder.decode(chunk, { stream: true });
 
       const lines = buffer.split("\n");
@@ -46,10 +45,7 @@ class OllamaAdapterClass {
   }
 }
 
-// unchanged helper
-const collectStream = async (
-  stream: AsyncGenerator<string>,
-): Promise<string> => {
+const collectStream = async (stream) => {
   let result = "";
   for await (const chunk of stream) {
     result += chunk;
@@ -58,12 +54,12 @@ const collectStream = async (
 };
 
 export const ollamaAdapter = {
-  generateResponse: async (prompt: string): Promise<string> => {
+  async generateResponse(prompt, _conversationHistory = []) {
     try {
       const ollama = new OllamaAdapterClass();
       const stream = ollama.stream(prompt);
       return await collectStream(stream);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       throw new Error(err?.message ?? "LLM failed");
     }

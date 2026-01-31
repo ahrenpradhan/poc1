@@ -1,5 +1,5 @@
 import { mockAdapter } from "./mock.adapter.js";
-import { ollamaAdapter } from "./ollamaAdapter.ts";
+import { ollamaAdapter } from "./ollama.adapter.js";
 /**
  * The active AI adapter
  * Change this export to use a different adapter implementation

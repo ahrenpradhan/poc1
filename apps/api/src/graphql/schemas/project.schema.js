@@ -34,11 +34,13 @@ export const projectSchema = `
     sequence: Int!
     role: MessageRole!
     content: String!
+    adapter: String
     created_at: String!
   }
 
   input GenerateAIResponseInput {
     chat_id: Int!
+    adapter: String
   }
 
   type PageInfo {

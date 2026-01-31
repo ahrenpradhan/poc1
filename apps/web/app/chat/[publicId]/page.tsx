@@ -30,6 +30,7 @@ export default function ChatPage() {
 
   const publicId = params.publicId as string;
   const generateAIChatId = searchParams.get("generateAI");
+  const adapterParam = searchParams.get("adapter");
 
   const { data, loading } = useQuery(GET_CHAT_BY_PUBLIC_ID, {
     variables: { public_id: publicId },
@@ -68,6 +69,7 @@ export default function ChatPage() {
               variables: {
                 input: {
                   chat_id: chatId,
+                  adapter: adapterParam || "mock",
                 },
               },
             });
@@ -90,6 +92,7 @@ export default function ChatPage() {
     router,
     generateAIResponse,
     isAITyping,
+    adapterParam,
   ]);
 
   const handleMessageSent = (message: Message) => {

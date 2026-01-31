@@ -15,6 +15,7 @@ import {
   INPUT_MAX_HEIGHT,
   INPUT_MAX_HEIGHT_MOBILE,
 } from "@/lib/constants";
+import { AdapterSelector, AdapterType } from "./adapter-selector";
 
 interface Message {
   id: number;
@@ -44,6 +45,7 @@ export function ChatInput({
   className,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  const [adapter, setAdapter] = useState<AdapterType>("mock");
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -79,7 +81,7 @@ export function ChatInput({
         // Store chat id for AI response generation after redirect
         const newChatId = data.createNewChatByMessage.id;
         router.push(
-          `/chat/${data.createNewChatByMessage.public_id}?generateAI=${newChatId}`,
+          `/chat/${data.createNewChatByMessage.public_id}?generateAI=${newChatId}&adapter=${adapter}`,
         );
       }
     } else if (mode === "reply" && chatId) {
@@ -108,6 +110,7 @@ export function ChatInput({
             variables: {
               input: {
                 chat_id: chatId,
+                adapter: adapter,
               },
             },
           });
@@ -154,7 +157,12 @@ export function ChatInput({
           rows={1}
           disabled={isLoading}
         />
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          <AdapterSelector
+            value={adapter}
+            onChange={setAdapter}
+            disabled={isLoading}
+          />
           <Button
             size="sm"
             className="rounded-full gap-2"

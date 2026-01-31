@@ -134,6 +134,7 @@ model message {
   sequence Int
   role     MessageRole
   content  String      @db.LongText
+  adapter  String?     @db.VarChar(50)
 
   created_at DateTime  @default(now())
   deleted_at DateTime?

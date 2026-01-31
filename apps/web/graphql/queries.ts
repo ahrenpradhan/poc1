@@ -135,6 +135,7 @@ export const GENERATE_AI_RESPONSE = gql`
       sequence
       role
       content
+      adapter
       created_at
     }
   }

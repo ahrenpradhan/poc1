@@ -646,10 +646,11 @@ export const projectResolvers = {
       const nextSequence = lastMessage ? lastMessage.sequence + 1 : 1;
 
       // Generate AI response
-
-      const aiResponse = await aiAdapter[
-        input.adapterType || "default"
-      ].generateResponse(lastUserMessage.content, existingMessages);
+      const adapterName = input.adapter || "default";
+      const aiResponse = await aiAdapter[adapterName].generateResponse(
+        lastUserMessage.content,
+        existingMessages,
+      );
 
       // Create the assistant message
       const assistantMessage = await context.prisma.message.create({
@@ -658,6 +659,7 @@ export const projectResolvers = {
           sequence: nextSequence,
           role: "assistant",
           content: aiResponse,
+          adapter: adapterName === "default" ? "ollama" : adapterName,
           created_at: new Date(),
         },
       });
