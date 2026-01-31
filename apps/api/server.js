@@ -5,6 +5,7 @@ import { db as prisma } from "db";
 import { schema } from "./src/graphql/schemas/index.js";
 import { resolvers } from "./src/graphql/resolvers/index.js";
 import { authMiddleware } from "./src/middleware/auth.js";
+import { sseRoutes } from "./src/routes/sse.js";
 
 const app = Fastify({
   logger: true,
@@ -16,7 +17,7 @@ await app.register(cors, {
 });
 
 // Register Mercurius GraphQL
-app.register(mercurius, {
+await app.register(mercurius, {
   schema,
   resolvers,
   context: async (request) => {
@@ -33,6 +34,12 @@ app.register(mercurius, {
 
 // Health check endpoint
 app.get("/health", async () => ({ ok: true }));
+
+// Decorate fastify with prisma for use in routes
+app.decorate("prisma", prisma);
+
+// Register SSE routes
+await app.register(sseRoutes);
 
 // Graceful shutdown
 const closeGracefully = async (signal) => {

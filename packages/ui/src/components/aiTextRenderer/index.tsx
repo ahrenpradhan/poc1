@@ -2,9 +2,12 @@ import { Fragment } from "react";
 import { splitMarkdownBlocks, normalizeBlocks } from "./utils";
 import { CodeBlock } from "./CodeBlock";
 import { MermaidDiagram } from "./MermaidDiagram";
+import { VegaLiteChart } from "./VegaLiteChart";
 
 export function AiTextRenderer({ content }: { content: string }) {
-  if (!content.includes("```")) {
+  // Check for code fences (including escaped backticks)
+  const hasCodeFence = content.includes("```") || content.includes("\\`\\`\\`");
+  if (!hasCodeFence) {
     return <>{content}</>;
   }
 
@@ -26,8 +29,7 @@ export function AiTextRenderer({ content }: { content: string }) {
           case "vega-lite":
             return (
               <Fragment key={key}>
-                {block.content}
-                <br />
+                <VegaLiteChart spec={block.content} />
               </Fragment>
             );
           case "code":
@@ -51,5 +53,6 @@ export function AiTextRenderer({ content }: { content: string }) {
 
 export { CodeBlock } from "./CodeBlock";
 export { MermaidDiagram } from "./MermaidDiagram";
+export { VegaLiteChart } from "./VegaLiteChart";
 export { splitMarkdownBlocks, normalizeBlocks } from "./utils";
 export type { MarkdownBlock, NormalizedBlock } from "./types";

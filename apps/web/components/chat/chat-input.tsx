@@ -16,6 +16,8 @@ import {
   INPUT_MAX_HEIGHT_MOBILE,
 } from "@/lib/constants";
 import { AdapterSelector, AdapterType } from "./adapter-selector";
+import { NetworkSelector, NetworkType } from "./network-selector";
+import { useSSEChat } from "@/hooks/useSSEChat";
 
 interface Message {
   id: number;
@@ -30,6 +32,7 @@ interface ChatInputProps {
   chatId?: number;
   onMessageSent?: (message: Message) => void;
   onAIResponseReceived?: (message: Message) => void;
+  onStreamingChunk?: (chunk: string, fullContent: string) => void;
   onTypingStart?: () => void;
   onTypingEnd?: () => void;
   className?: string;
@@ -40,14 +43,17 @@ export function ChatInput({
   chatId,
   onMessageSent,
   onAIResponseReceived,
+  onStreamingChunk,
   onTypingStart,
   onTypingEnd,
   className,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [adapter, setAdapter] = useState<AdapterType>("mock");
+  const [networkType, setNetworkType] = useState<NetworkType>("api");
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { streamResponse } = useSSEChat();
 
   // Auto-focus the input on mount
   useEffect(() => {
@@ -62,6 +68,37 @@ export function ChatInput({
   const [generateAIResponse] = useMutation(GENERATE_AI_RESPONSE);
 
   const isLoading = creatingChat || sendingMessage;
+
+  const handleAPIResponse = async (chatId: number) => {
+    const { data: aiData } = await generateAIResponse({
+      variables: {
+        input: {
+          chat_id: chatId,
+          adapter: adapter,
+        },
+      },
+    });
+
+    if (aiData?.generateAIResponse) {
+      onAIResponseReceived?.(aiData.generateAIResponse);
+    }
+  };
+
+  const handleSSEResponse = async (chatId: number) => {
+    await streamResponse({
+      chatId,
+      adapter,
+      onChunk: (chunk, fullContent) => {
+        onStreamingChunk?.(chunk, fullContent);
+      },
+      onComplete: (message) => {
+        onAIResponseReceived?.(message as Message);
+      },
+      onError: (error) => {
+        console.error("SSE Error:", error);
+      },
+    });
+  };
 
   const handleSubmit = async () => {
     const trimmedMessage = message.trim();
@@ -78,10 +115,9 @@ export function ChatInput({
       });
 
       if (data?.createNewChatByMessage?.public_id) {
-        // Store chat id for AI response generation after redirect
         const newChatId = data.createNewChatByMessage.id;
         router.push(
-          `/chat/${data.createNewChatByMessage.public_id}?generateAI=${newChatId}&adapter=${adapter}`,
+          `/chat/${data.createNewChatByMessage.public_id}?generateAI=${newChatId}&adapter=${adapter}&network=${networkType}`,
         );
       }
     } else if (mode === "reply" && chatId) {
@@ -105,18 +141,11 @@ export function ChatInput({
         onTypingStart?.();
 
         try {
-          // Step 3: Generate AI response
-          const { data: aiData } = await generateAIResponse({
-            variables: {
-              input: {
-                chat_id: chatId,
-                adapter: adapter,
-              },
-            },
-          });
-
-          if (aiData?.generateAIResponse) {
-            onAIResponseReceived?.(aiData.generateAIResponse);
+          // Step 3: Generate AI response based on network type
+          if (networkType === "sse") {
+            await handleSSEResponse(chatId);
+          } else {
+            await handleAPIResponse(chatId);
           }
         } finally {
           // Step 4: End typing indicator
@@ -125,7 +154,7 @@ export function ChatInput({
       }
     }
 
-    // Refocus after sending - use setTimeout to ensure it happens after React re-render
+    // Refocus after sending
     setTimeout(() => {
       textareaRef.current?.focus();
     }, REFOCUS_DELAY);
@@ -158,11 +187,18 @@ export function ChatInput({
           disabled={isLoading}
         />
         <div className="flex justify-between items-center">
-          <AdapterSelector
-            value={adapter}
-            onChange={setAdapter}
-            disabled={isLoading}
-          />
+          <div className="flex items-center gap-2">
+            <AdapterSelector
+              value={adapter}
+              onChange={setAdapter}
+              disabled={isLoading}
+            />
+            <NetworkSelector
+              value={networkType}
+              onChange={setNetworkType}
+              disabled={isLoading}
+            />
+          </div>
           <Button
             size="sm"
             className="rounded-full gap-2"

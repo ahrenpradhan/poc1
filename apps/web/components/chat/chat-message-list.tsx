@@ -26,12 +26,14 @@ interface ChatMessageListProps {
   chatId: number;
   newMessages?: Message[];
   isAITyping?: boolean;
+  streamingContent?: string;
 }
 
 export function ChatMessageList({
   chatId,
   newMessages = [],
   isAITyping = false,
+  streamingContent,
 }: ChatMessageListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -147,18 +149,21 @@ export function ChatMessageList({
     }
   }, [loadOlderMessages, pageInfo?.hasPreviousPage, loading]);
 
-  // Scroll to bottom on initial load, when new messages are added, or when AI starts typing
+  // Scroll to bottom on initial load, when new messages are added, when AI starts typing, or when streaming
   useEffect(() => {
     if (
       bottomRef.current &&
-      (isInitialLoad.current || newMessages.length > 0 || isAITyping)
+      (isInitialLoad.current ||
+        newMessages.length > 0 ||
+        isAITyping ||
+        streamingContent)
     ) {
       bottomRef.current.scrollIntoView({
         behavior: isInitialLoad.current ? "auto" : "smooth",
       });
       isInitialLoad.current = false;
     }
-  }, [allMessages.length, newMessages.length, isAITyping]);
+  }, [allMessages.length, newMessages.length, isAITyping, streamingContent]);
 
   // Fill viewport after initial load
   useEffect(() => {
@@ -218,7 +223,16 @@ export function ChatMessageList({
         />
       ))}
 
-      {/* Typing indicator */}
+      {/* Streaming content - show partial AI response */}
+      {streamingContent && (
+        <ChatMessage
+          role="assistant"
+          content={streamingContent}
+          created_at={new Date().toISOString()}
+        />
+      )}
+
+      {/* Typing indicator - show while AI is typing (including during streaming) */}
       {isAITyping && <TypingIndicator />}
 
       {/* Bottom anchor for scrolling to latest */}

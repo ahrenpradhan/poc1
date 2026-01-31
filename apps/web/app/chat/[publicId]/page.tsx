@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useQuery, useMutation } from "@apollo/client/react";
@@ -10,6 +10,7 @@ import { ChatMessageList } from "@/components/chat/chat-message-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { GET_CHAT_BY_PUBLIC_ID, GENERATE_AI_RESPONSE } from "@/graphql/queries";
+import { useSSEChat } from "@/hooks/useSSEChat";
 
 interface Message {
   id: number;
@@ -27,10 +28,14 @@ export default function ChatPage() {
   const { data: session, status: sessionStatus } = useSession();
   const [newMessages, setNewMessages] = useState<Message[]>([]);
   const [isAITyping, setIsAITyping] = useState(false);
+  const [streamingContent, setStreamingContent] = useState("");
+  const { streamResponse } = useSSEChat();
+  const generatingRef = useRef(false);
 
   const publicId = params.publicId as string;
   const generateAIChatId = searchParams.get("generateAI");
   const adapterParam = searchParams.get("adapter");
+  const networkParam = searchParams.get("network");
 
   const { data, loading } = useQuery(GET_CHAT_BY_PUBLIC_ID, {
     variables: { public_id: publicId },
@@ -55,27 +60,52 @@ export default function ChatPage() {
 
   // Handle AI response generation for new chats
   useEffect(() => {
-    if (generateAIChatId && chat && !isAITyping) {
+    if (generateAIChatId && chat && !generatingRef.current) {
       const chatId = parseInt(generateAIChatId, 10);
       if (chatId === chat.id) {
+        generatingRef.current = true;
+
         // Clear the URL parameter
         router.replace(`/chat/${publicId}`, { scroll: false });
 
         // Generate AI response
         const generateResponse = async () => {
           setIsAITyping(true);
-          try {
-            const { data: aiData } = await generateAIResponse({
-              variables: {
-                input: {
-                  chat_id: chatId,
-                  adapter: adapterParam || "mock",
-                },
-              },
-            });
 
-            if (aiData?.generateAIResponse) {
-              setNewMessages((prev) => [...prev, aiData.generateAIResponse]);
+          try {
+            if (networkParam === "sse") {
+              // Use SSE streaming
+              await streamResponse({
+                chatId,
+                adapter: adapterParam || "mock",
+                onChunk: (_chunk, fullContent) => {
+                  setStreamingContent(fullContent);
+                },
+                onComplete: (message) => {
+                  setStreamingContent("");
+                  setNewMessages((prev) => [...prev, message as Message]);
+                  generatingRef.current = false;
+                },
+                onError: (error) => {
+                  console.error("SSE Error:", error);
+                  generatingRef.current = false;
+                },
+              });
+            } else {
+              // Use regular API
+              const { data: aiData } = await generateAIResponse({
+                variables: {
+                  input: {
+                    chat_id: chatId,
+                    adapter: adapterParam || "mock",
+                  },
+                },
+              });
+
+              if (aiData?.generateAIResponse) {
+                setNewMessages((prev) => [...prev, aiData.generateAIResponse]);
+              }
+              generatingRef.current = false;
             }
           } finally {
             setIsAITyping(false);
@@ -91,8 +121,9 @@ export default function ChatPage() {
     publicId,
     router,
     generateAIResponse,
-    isAITyping,
     adapterParam,
+    networkParam,
+    streamResponse,
   ]);
 
   const handleMessageSent = (message: Message) => {
@@ -100,7 +131,12 @@ export default function ChatPage() {
   };
 
   const handleAIResponseReceived = (message: Message) => {
+    setStreamingContent("");
     setNewMessages((prev) => [...prev, message]);
+  };
+
+  const handleStreamingChunk = (_chunk: string, fullContent: string) => {
+    setStreamingContent(fullContent);
   };
 
   const handleTypingStart = () => {
@@ -139,6 +175,7 @@ export default function ChatPage() {
           chatId={chat.id}
           newMessages={newMessages}
           isAITyping={isAITyping}
+          streamingContent={streamingContent}
         />
 
         {/* Fixed input at bottom */}
@@ -149,6 +186,7 @@ export default function ChatPage() {
               chatId={chat.id}
               onMessageSent={handleMessageSent}
               onAIResponseReceived={handleAIResponseReceived}
+              onStreamingChunk={handleStreamingChunk}
               onTypingStart={handleTypingStart}
               onTypingEnd={handleTypingEnd}
             />

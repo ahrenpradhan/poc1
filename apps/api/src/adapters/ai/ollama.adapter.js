@@ -64,4 +64,16 @@ export const ollamaAdapter = {
       throw new Error(err?.message ?? "LLM failed");
     }
   },
+
+  async *streamResponse(prompt, _conversationHistory = []) {
+    try {
+      const ollama = new OllamaAdapterClass();
+      for await (const chunk of ollama.stream(prompt)) {
+        yield chunk;
+      }
+    } catch (err) {
+      console.error(err);
+      throw new Error(err?.message ?? "LLM failed");
+    }
+  },
 };
