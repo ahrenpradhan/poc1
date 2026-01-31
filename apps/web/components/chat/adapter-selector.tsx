@@ -5,8 +5,8 @@ import { ConfigSelector, ConfigOption } from "./config-selector";
 export type AdapterType = "mock" | "ollama";
 
 const adapterOptions: ConfigOption<AdapterType>[] = [
-  { value: "mock", label: "Mock" },
-  { value: "ollama", label: "Ollama" },
+  { value: "mock", label: "Mock", description: "Use the mock adapter" },
+  { value: "ollama", label: "Ollama", description: "Use the Ollama adapter" },
 ];
 
 interface AdapterSelectorProps {

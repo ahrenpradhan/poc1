@@ -5,8 +5,13 @@ import { ConfigSelector, ConfigOption } from "./config-selector";
 export type NetworkType = "api" | "sse";
 
 const networkOptions: ConfigOption<NetworkType>[] = [
-  { value: "api", label: "API" },
-  { value: "sse", label: "SSE" },
+  {
+    value: "api",
+    label: "2 API method",
+    description:
+      "Use the process where frontend sends a request and receives a response, followed by a second request to fetch the result.",
+  },
+  { value: "sse", label: "SSE", description: "Use the Server-Sent Events" },
 ];
 
 interface NetworkSelectorProps {
