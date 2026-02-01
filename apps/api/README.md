@@ -10,14 +10,12 @@ cd /path/to/poc1
 npm install
 ```
 
-2. Create `.env` file in project root based on `.env.example`:
+2. Create `.env` file based on `.env.example`:
 ```bash
 cp .env.example .env
 ```
 
-3. Update the environment variables in the root `.env` file:
-   - `DATABASE_URL`: MySQL connection string
-   - `JWT_SECRET`: Secret key for JWT tokens
+3. Update the environment variables in `.env` (see Environment Variables section below)
 
 4. Run database migrations:
 ```bash
@@ -30,9 +28,25 @@ npx prisma migrate dev
 npm run dev
 ```
 
-The server will start on `http://localhost:3000`
+The server will start on `http://localhost:3000` (or your configured `PORT`)
 
 GraphiQL interface: `http://localhost:3000/graphiql`
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `3000` |
+| `HOST` | Server host binding | `0.0.0.0` |
+| `JWT_SECRET` | Secret key for JWT tokens | `your-secret-key-change-in-production` |
+| `JWT_EXPIRATION` | JWT token expiration time | `7d` |
+| `BCRYPT_SALT_ROUNDS` | Bcrypt hashing rounds | `10` |
+| `OLLAMA_BASE_URL` | Ollama service URL | `http://localhost:11434` |
+| `OLLAMA_MODEL` | Ollama model to use | `mistral` |
+| `MOCK_RESPONSE_DELAY_MS` | Mock adapter response delay | `1500` |
+| `MOCK_STREAM_WORD_DELAY_MS` | Mock adapter streaming delay | `100` |
+
+**Important:** Always set a strong `JWT_SECRET` in production environments.
 
 ## GraphQL Operations
 

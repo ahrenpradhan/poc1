@@ -1,8 +1,8 @@
 import fetch from "node-fetch";
 
 class OllamaAdapterClass {
-  baseUrl = "http://localhost:11434";
-  model = "mistral";
+  baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+  model = process.env.OLLAMA_MODEL || "mistral";
 
   async *stream(prompt, signal) {
     const response = await fetch(`${this.baseUrl}/api/generate`, {

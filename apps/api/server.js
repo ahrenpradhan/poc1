@@ -68,9 +68,11 @@ process.on("SIGTERM", closeGracefully);
 // Start server
 const start = async () => {
   try {
-    await app.listen({ port: 3000, host: "0.0.0.0" });
-    app.log.info(`Server running on http://localhost:3000`);
-    app.log.info(`GraphiQL available at http://localhost:3000/graphiql`);
+    const port = parseInt(process.env.PORT || "3000", 10);
+    const host = process.env.HOST || "0.0.0.0";
+    await app.listen({ port, host });
+    app.log.info(`Server running on http://${host}:${port}`);
+    app.log.info(`GraphiQL available at http://${host}:${port}/graphiql`);
   } catch (err) {
     app.log.error(err);
     await prisma.$disconnect();

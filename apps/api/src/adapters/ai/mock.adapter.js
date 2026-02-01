@@ -1,3 +1,12 @@
+const MOCK_RESPONSE_DELAY = parseInt(
+  process.env.MOCK_RESPONSE_DELAY_MS || "1500",
+  10,
+);
+const MOCK_STREAM_WORD_DELAY = parseInt(
+  process.env.MOCK_STREAM_WORD_DELAY_MS || "100",
+  10,
+);
+
 /**
  * Mock AI adapter that echoes back the user's message
  * @type {import('./types.js').AIAdapter}
@@ -12,7 +21,7 @@ export const mockAdapter = {
    */
   async generateResponse(userMessage, _conversationHistory = [], options = {}) {
     await new Promise((resolve, reject) => {
-      const timeout = setTimeout(resolve, 1500);
+      const timeout = setTimeout(resolve, MOCK_RESPONSE_DELAY);
       options.signal?.addEventListener("abort", () => {
         clearTimeout(timeout);
         reject(new DOMException("Aborted", "AbortError"));
@@ -41,7 +50,7 @@ export const mockAdapter = {
       if (options.signal?.aborted) {
         return;
       }
-      await new Promise((r) => setTimeout(r, 100)); // Simulate streaming delay
+      await new Promise((r) => setTimeout(r, MOCK_STREAM_WORD_DELAY)); // Simulate streaming delay
       yield { chunk: word + " ", content_type: "text" };
     }
   },
