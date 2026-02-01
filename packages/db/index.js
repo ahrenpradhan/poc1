@@ -29,7 +29,7 @@ const adapter = new PrismaMariaDb({
   connectionLimit: 10,
 });
 
-export const db = new PrismaClient({ adapter }).$extends({
+globalThis.prisma ??= new PrismaClient({ adapter }).$extends({
   query: {
     $allModels: {
       async findMany({ args, query }) {
@@ -58,3 +58,5 @@ export const db = new PrismaClient({ adapter }).$extends({
     },
   },
 });
+
+export const db = globalThis.prisma;
