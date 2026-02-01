@@ -1,13 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ConfigSelector, ConfigOption } from "./config-selector";
 
-export type AdapterType = "mock" | "ollama";
-
-const adapterOptions: ConfigOption<AdapterType>[] = [
-  { value: "mock", label: "Mock", description: "Use the mock adapter" },
-  { value: "ollama", label: "Ollama", description: "Use the Ollama adapter" },
-];
+export type AdapterType = string;
 
 interface AdapterSelectorProps {
   value: AdapterType;
@@ -20,11 +16,38 @@ export function AdapterSelector({
   onChange,
   disabled,
 }: AdapterSelectorProps) {
+  const [options, setOptions] = useState<ConfigOption<AdapterType>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAdapters = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/config/adapters`,
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setOptions(data.adapters);
+        }
+      } catch (error) {
+        console.error("Failed to fetch adapters:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdapters();
+  }, []);
+
+  if (loading || options.length === 0) {
+    return <div className="h-8 w-20 bg-muted animate-pulse rounded-md" />;
+  }
+
   return (
     <ConfigSelector
       value={value}
       onChange={onChange}
-      options={adapterOptions}
+      options={options}
       disabled={disabled}
     />
   );

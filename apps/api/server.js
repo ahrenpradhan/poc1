@@ -6,6 +6,7 @@ import { schema } from "./src/graphql/schemas/index.js";
 import { resolvers } from "./src/graphql/resolvers/index.js";
 import { authMiddleware } from "./src/middleware/auth.js";
 import { sseRoutes } from "./src/routes/sse.js";
+import { configRoutes } from "./src/routes/config.js";
 
 const app = Fastify({
   logger: true,
@@ -40,6 +41,9 @@ app.decorate("prisma", prisma);
 
 // Register SSE routes
 await app.register(sseRoutes);
+
+// Register config routes
+await app.register(configRoutes);
 
 // Graceful shutdown
 const closeGracefully = async (signal) => {
