@@ -135,6 +135,7 @@ export async function sseRoutes(fastify) {
             content: fullContent,
             content_type: contentType,
             adapter: adapterName,
+            network_method: "sse",
             created_at: new Date(),
           },
         });

@@ -36,6 +36,7 @@ export const projectSchema = `
     content: String!
     content_type: String
     adapter: String
+    network_method: String
     created_at: String!
   }
 

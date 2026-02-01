@@ -21,6 +21,7 @@ interface Message {
   content: string;
   content_type?: string;
   adapter?: string;
+  network_method?: string;
   created_at: string;
 }
 
@@ -222,6 +223,7 @@ export function ChatMessageList({
           role={message.role}
           content={message.content}
           adapter={message.adapter}
+          network_method={message.network_method}
           created_at={message.created_at}
         />
       ))}

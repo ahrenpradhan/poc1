@@ -38,6 +38,7 @@ export const GET_CHAT_MESSAGES_PAGINATED = gql`
           content
           content_type
           adapter
+          network_method
           created_at
         }
       }
@@ -73,6 +74,7 @@ export const GET_CHAT_MESSAGES_BY_USER_COUNT = gql`
           content
           content_type
           adapter
+          network_method
           created_at
         }
       }
@@ -141,6 +143,7 @@ export const GENERATE_AI_RESPONSE = gql`
       content
       content_type
       adapter
+      network_method
       created_at
     }
   }

@@ -662,6 +662,7 @@ export const projectResolvers = {
           content: aiResponse.content,
           content_type: aiResponse.content_type || "text",
           adapter: adapterName === "default" ? "ollama" : adapterName,
+          network_method: "api",
           created_at: new Date(),
         },
       });

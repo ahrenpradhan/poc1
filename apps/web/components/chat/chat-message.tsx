@@ -11,6 +11,7 @@ interface ChatMessageProps {
   role: "user" | "assistant" | "system";
   content: string;
   adapter?: string;
+  network_method?: string;
   created_at: string;
   className?: string;
 }
@@ -61,10 +62,16 @@ const formatTime = (timestamp: string) => {
   }
 };
 
+const formatNetworkMethod = (method?: string) => {
+  if (!method) return null;
+  return method === "api" ? "API" : "SSE";
+};
+
 export function ChatMessage({
   role,
   content,
   adapter,
+  network_method,
   created_at,
   className,
 }: ChatMessageProps) {
@@ -103,6 +110,11 @@ export function ChatMessage({
         {!isUser && adapter && (
           <span className="text-[10px] sm:text-xs text-muted-foreground/70">
             · {adapter}
+          </span>
+        )}
+        {!isUser && network_method && (
+          <span className="text-[10px] sm:text-xs text-muted-foreground/70">
+            · {formatNetworkMethod(network_method)}
           </span>
         )}
       </div>
