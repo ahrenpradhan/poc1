@@ -91,15 +91,31 @@ export async function sseRoutes(fastify) {
       "Access-Control-Allow-Origin": "*",
     });
 
+    // Create abort controller for cancellation
+    const abortController = new AbortController();
+    let isClosed = false;
+
+    // Handle client disconnect
+    request.raw.on("close", () => {
+      if (!isClosed) {
+        isClosed = true;
+        abortController.abort();
+        fastify.log.info("Client disconnected, aborting LLM request");
+      }
+    });
+
     let fullContent = "";
     let contentType = "text";
 
     try {
-      // Stream the response
+      // Stream the response with abort signal
       for await (const streamData of selectedAdapter.streamResponse(
         lastUserMessage.content,
         existingMessages,
+        { signal: abortController.signal },
       )) {
+        if (isClosed) break;
+
         const chunk = streamData.chunk;
         contentType = streamData.content_type || "text";
         fullContent += chunk;
@@ -108,27 +124,39 @@ export async function sseRoutes(fastify) {
         );
       }
 
-      // Save the complete message to database
-      const assistantMessage = await fastify.prisma.message.create({
-        data: {
-          chat_id,
-          sequence: nextSequence,
-          role: "assistant",
-          content: fullContent,
-          content_type: contentType,
-          adapter: adapterName,
-          created_at: new Date(),
-        },
-      });
+      // Only save if not aborted and has content
+      if (!isClosed && fullContent.length > 0) {
+        // Save the complete message to database
+        const assistantMessage = await fastify.prisma.message.create({
+          data: {
+            chat_id,
+            sequence: nextSequence,
+            role: "assistant",
+            content: fullContent,
+            content_type: contentType,
+            adapter: adapterName,
+            created_at: new Date(),
+          },
+        });
 
-      // Send completion event with message ID
-      reply.raw.write(
-        `data: ${JSON.stringify({ done: true, message: assistantMessage })}\n\n`,
-      );
+        // Send completion event with message ID
+        reply.raw.write(
+          `data: ${JSON.stringify({ done: true, message: assistantMessage })}\n\n`,
+        );
+      }
     } catch (err) {
-      console.error("SSE streaming error:", err);
-      reply.raw.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      if (err?.name === "AbortError" || isClosed) {
+        fastify.log.info("Stream aborted by client");
+      } else {
+        console.error("SSE streaming error:", err);
+        if (!isClosed) {
+          reply.raw.write(
+            `data: ${JSON.stringify({ error: err.message })}\n\n`,
+          );
+        }
+      }
     } finally {
+      isClosed = true;
       reply.raw.end();
     }
   });

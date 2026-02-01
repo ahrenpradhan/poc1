@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@repo/ui/primitives/button";
-import { Search, Send } from "lucide-react";
+import { Search, Send, Square } from "lucide-react";
 import {
   CREATE_NEW_CHAT_BY_MESSAGE,
   CREATE_MESSAGE,
@@ -51,14 +51,43 @@ export function ChatInput({
   const [message, setMessage] = useState("");
   const [adapter, setAdapter] = useState<AdapterType>("mock");
   const [networkType, setNetworkType] = useState<NetworkType>("api");
+  const [isGenerating, setIsGenerating] = useState(false);
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { streamResponse } = useSSEChat();
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const { streamResponse, cancelStream } = useSSEChat();
 
   // Auto-focus the input on mount
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
+
+  // Auto-resize textarea up to 4 rows
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = "auto";
+
+    // Calculate line height (approx 24px for text-base, 28px for text-lg)
+    const lineHeight = window.innerWidth < 640 ? 24 : 28;
+    const maxRows = 4;
+    const maxHeight = lineHeight * maxRows;
+
+    // Set height to scrollHeight but cap at maxHeight
+    const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = `${newHeight}px`;
+
+    // Enable overflow if content exceeds max height
+    textarea.style.overflowY =
+      textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+  };
+
+  // Adjust height when message changes
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [message]);
 
   const [createNewChat, { loading: creatingChat }] = useMutation(
     CREATE_NEW_CHAT_BY_MESSAGE,
@@ -70,6 +99,8 @@ export function ChatInput({
   const isLoading = creatingChat || sendingMessage;
 
   const handleAPIResponse = async (chatId: number) => {
+    abortControllerRef.current = new AbortController();
+
     const { data: aiData } = await generateAIResponse({
       variables: {
         input: {
@@ -77,11 +108,30 @@ export function ChatInput({
           adapter: adapter,
         },
       },
+      context: {
+        fetchOptions: {
+          signal: abortControllerRef.current.signal,
+        },
+      },
     });
 
     if (aiData?.generateAIResponse) {
       onAIResponseReceived?.(aiData.generateAIResponse);
     }
+  };
+
+  const handleStop = () => {
+    // Cancel SSE stream
+    cancelStream();
+
+    // Cancel API request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    setIsGenerating(false);
+    onTypingEnd?.();
   };
 
   const handleSSEResponse = async (chatId: number) => {
@@ -139,6 +189,7 @@ export function ChatInput({
 
         // Step 2: Start typing indicator
         onTypingStart?.();
+        setIsGenerating(true);
 
         try {
           // Step 3: Generate AI response based on network type
@@ -149,6 +200,7 @@ export function ChatInput({
           }
         } finally {
           // Step 4: End typing indicator
+          setIsGenerating(false);
           onTypingEnd?.();
         }
       }
@@ -175,13 +227,7 @@ export function ChatInput({
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full bg-transparent outline-none text-base sm:text-lg placeholder:text-muted-foreground resize-none min-h-[24px]"
-          style={{
-            maxHeight:
-              typeof window !== "undefined" && window.innerWidth < 640
-                ? INPUT_MAX_HEIGHT_MOBILE
-                : INPUT_MAX_HEIGHT,
-          }}
+          className="w-full bg-transparent outline-none text-base sm:text-lg placeholder:text-muted-foreground resize-none min-h-[24px] overflow-hidden"
           placeholder="Ask anything"
           rows={1}
           disabled={isLoading}
@@ -199,24 +245,36 @@ export function ChatInput({
               disabled={isLoading}
             />
           </div>
-          <Button
-            size="sm"
-            className="rounded-full gap-2"
-            onClick={handleSubmit}
-            disabled={!message.trim() || isLoading}
-          >
-            {mode === "create" ? (
-              <>
-                <Search className="h-4 w-4" />
-                <span className="hidden sm:inline">Search</span>
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4" />
-                <span className="hidden sm:inline">Send</span>
-              </>
-            )}
-          </Button>
+          {isGenerating ? (
+            <Button
+              size="sm"
+              variant="destructive"
+              className="rounded-full gap-2"
+              onClick={handleStop}
+            >
+              <Square className="h-4 w-4 fill-current" />
+              <span className="hidden sm:inline">Stop</span>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="rounded-full gap-2"
+              onClick={handleSubmit}
+              disabled={!message.trim() || isLoading}
+            >
+              {mode === "create" ? (
+                <>
+                  <Search className="h-4 w-4" />
+                  <span className="hidden sm:inline">Search</span>
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  <span className="hidden sm:inline">Send</span>
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>

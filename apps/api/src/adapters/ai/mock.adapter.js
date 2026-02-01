@@ -7,10 +7,17 @@ export const mockAdapter = {
    * Generates a mock AI response by echoing the user message
    * @param {string} userMessage - The user's message
    * @param {import('./types.js').ConversationMessage[]} _conversationHistory - Previous messages (unused in mock)
+   * @param {object} options - Options including abort signal
    * @returns {Promise<{content: string, content_type: string}>} The AI response
    */
-  async generateResponse(userMessage, _conversationHistory = []) {
-    await new Promise((r) => setTimeout(r, 1500));
+  async generateResponse(userMessage, _conversationHistory = [], options = {}) {
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(resolve, 1500);
+      options.signal?.addEventListener("abort", () => {
+        clearTimeout(timeout);
+        reject(new DOMException("Aborted", "AbortError"));
+      });
+    });
     const turn = _conversationHistory.length + 1;
     return {
       content: `AI (mock): Turn ${turn}. You said: ${userMessage}`,
@@ -22,14 +29,18 @@ export const mockAdapter = {
    * Streams a mock AI response word by word
    * @param {string} userMessage - The user's message
    * @param {import('./types.js').ConversationMessage[]} _conversationHistory - Previous messages (unused in mock)
+   * @param {object} options - Options including abort signal
    * @returns {AsyncGenerator<{chunk?: string, content_type: string, done?: boolean}>} Yields response chunks
    */
-  async *streamResponse(userMessage, _conversationHistory = []) {
+  async *streamResponse(userMessage, _conversationHistory = [], options = {}) {
     const turn = _conversationHistory.length + 1;
     const response = `AI (mock): Turn ${turn}. You said: ${userMessage}`;
     const words = response.split(" ");
 
     for (const word of words) {
+      if (options.signal?.aborted) {
+        return;
+      }
       await new Promise((r) => setTimeout(r, 100)); // Simulate streaming delay
       yield { chunk: word + " ", content_type: "text" };
     }

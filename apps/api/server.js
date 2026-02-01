@@ -25,9 +25,18 @@ await app.register(mercurius, {
     // Add auth middleware
     const authContext = await authMiddleware(request);
 
+    // Create abort controller for request cancellation
+    const abortController = new AbortController();
+
+    // Abort when client disconnects
+    request.raw.on("close", () => {
+      abortController.abort();
+    });
+
     return {
       ...authContext,
       prisma,
+      signal: abortController.signal,
     };
   },
   graphiql: true, // Enable GraphiQL interface for development

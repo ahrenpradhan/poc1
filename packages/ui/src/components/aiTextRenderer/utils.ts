@@ -5,33 +5,91 @@ export function splitMarkdownBlocks(input: string): MarkdownBlock[] {
   const normalizedInput = input.replace(/\\`/g, "`");
 
   const blocks: MarkdownBlock[] = [];
-  // Support language identifiers with hyphens (e.g., vega-lite)
-  const regex = /```([\w-]+)?\n([\s\S]*?)```/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
+  let currentIndex = 0;
 
-  while ((match = regex.exec(normalizedInput)) !== null) {
-    const [fullMatch, lang = "plaintext", code] = match;
+  while (currentIndex < normalizedInput.length) {
+    // Find the next code fence start
+    const fenceStart = normalizedInput.indexOf("```", currentIndex);
 
-    if (match.index > lastIndex) {
-      const text = normalizedInput.slice(lastIndex, match.index).trim();
+    if (fenceStart === -1) {
+      // No more code fences, add remaining text
+      const remaining = normalizedInput.slice(currentIndex).trim();
+      if (remaining) {
+        blocks.push({ type: "text", content: remaining });
+      }
+      break;
+    }
+
+    // Add text before the code fence
+    if (fenceStart > currentIndex) {
+      const text = normalizedInput.slice(currentIndex, fenceStart).trim();
       if (text) {
         blocks.push({ type: "text", content: text });
       }
     }
 
+    // Find the language identifier (until newline)
+    const langEnd = normalizedInput.indexOf("\n", fenceStart + 3);
+    if (langEnd === -1) {
+      // Malformed, add rest as text
+      const remaining = normalizedInput.slice(fenceStart).trim();
+      if (remaining) {
+        blocks.push({ type: "text", content: remaining });
+      }
+      break;
+    }
+
+    const lang =
+      normalizedInput.slice(fenceStart + 3, langEnd).trim() || "plaintext";
+
+    // Find the closing fence - must be on its own line
+    let fenceEnd = -1;
+    let searchFrom = langEnd + 1;
+
+    while (searchFrom < normalizedInput.length) {
+      const nextFence = normalizedInput.indexOf("```", searchFrom);
+      if (nextFence === -1) {
+        break;
+      }
+
+      // Check if this fence is at start of line (or preceded by newline)
+      const charBefore = nextFence > 0 ? normalizedInput[nextFence - 1] : "\n";
+      if (charBefore === "\n" || nextFence === 0) {
+        // Check if followed by newline or end of string (not another language identifier)
+        const afterFence = normalizedInput.slice(nextFence + 3, nextFence + 4);
+        if (afterFence === "" || afterFence === "\n" || afterFence === "\r") {
+          fenceEnd = nextFence;
+          break;
+        }
+      }
+      searchFrom = nextFence + 3;
+    }
+
+    if (fenceEnd === -1) {
+      // No closing fence found, treat rest as code
+      const code = normalizedInput.slice(langEnd + 1).trim();
+      blocks.push({
+        type: "code",
+        lang: lang.toLowerCase(),
+        content: code,
+      });
+      break;
+    }
+
+    // Extract code content
+    const code = normalizedInput.slice(langEnd + 1, fenceEnd).trim();
     blocks.push({
       type: "code",
       lang: lang.toLowerCase(),
-      content: code.trim(),
+      content: code,
     });
 
-    lastIndex = match.index + fullMatch.length;
-  }
-
-  const remaining = normalizedInput.slice(lastIndex).trim();
-  if (remaining) {
-    blocks.push({ type: "text", content: remaining });
+    // Move past the closing fence
+    currentIndex = fenceEnd + 3;
+    // Skip trailing newline after closing fence
+    if (normalizedInput[currentIndex] === "\n") {
+      currentIndex++;
+    }
   }
 
   return blocks;

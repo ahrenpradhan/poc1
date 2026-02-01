@@ -650,6 +650,7 @@ export const projectResolvers = {
       const aiResponse = await aiAdapter[adapterName].generateResponse(
         lastUserMessage.content,
         existingMessages,
+        { signal: context.signal },
       );
 
       // Create the assistant message

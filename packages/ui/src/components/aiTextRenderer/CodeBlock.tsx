@@ -92,6 +92,125 @@ const registerAdditionalLanguages = () => {
     },
   };
 
+  // Python language definition
+  (Prism.languages as Record<string, unknown>).python = {
+    comment: {
+      pattern: /#.*/,
+      greedy: true,
+    },
+    "string-interpolation": {
+      pattern:
+        /(?:f|fr|rf)(?:("""|''')[\s\S]*?\1|("|')(?:\\.|(?!\2)[^\\\r\n])*\2)/i,
+      greedy: true,
+      inside: {
+        interpolation: {
+          pattern:
+            /((?:^|[^{])(?:\{\{)*)\{(?!\{)(?:[^{}]|\{(?!\{)(?:[^{}]|\{(?!\{)(?:[^{}])+\})+\})+\}/,
+          lookbehind: true,
+          inside: {
+            "format-spec": {
+              pattern: /(:)[^:(){}]+(?=\}$)/,
+              lookbehind: true,
+            },
+            "conversion-option": {
+              pattern: /![sra](?=[:}]$)/,
+              alias: "punctuation",
+            },
+          },
+        },
+        string: /[\s\S]+/,
+      },
+    },
+    "triple-quoted-string": {
+      pattern: /(?:[rub]|br|rb)?("""|''')[\s\S]*?\1/i,
+      greedy: true,
+      alias: "string",
+    },
+    string: {
+      pattern: /(?:[rub]|br|rb)?("|')(?:\\.|(?!\1)[^\\\r\n])*\1/i,
+      greedy: true,
+    },
+    function: {
+      pattern: /((?:^|\s)def[ \t]+)[a-zA-Z_]\w*(?=\s*\()/,
+      lookbehind: true,
+    },
+    "class-name": {
+      pattern: /(\bclass\s+)\w+/i,
+      lookbehind: true,
+    },
+    decorator: {
+      pattern: /(^[\t ]*)@\w+(?:\.\w+)*/m,
+      lookbehind: true,
+      alias: ["annotation", "punctuation"],
+      inside: {
+        punctuation: /\./,
+      },
+    },
+    keyword:
+      /\b(?:and|as|assert|async|await|break|class|continue|def|del|elif|else|except|exec|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|print|raise|return|try|while|with|yield)\b/,
+    builtin:
+      /\b(?:__import__|abs|all|any|apply|ascii|basestring|bin|bool|buffer|bytearray|bytes|callable|chr|classmethod|cmp|coerce|compile|complex|delattr|dict|dir|divmod|enumerate|eval|execfile|file|filter|float|format|frozenset|getattr|globals|hasattr|hash|help|hex|id|input|int|intern|isinstance|issubclass|iter|len|list|locals|long|map|max|memoryview|min|next|object|oct|open|ord|pow|print|property|range|raw_input|reduce|reload|repr|reversed|round|set|setattr|slice|sorted|staticmethod|str|sum|super|tuple|type|unichr|unicode|vars|xrange|zip)\b/,
+    boolean: /\b(?:False|None|True)\b/,
+    number:
+      /\b0(?:b(?:_?[01])+|o(?:_?[0-7])+|x(?:_?[a-f0-9])+)\b|(?:\b\d+(?:_\d+)*(?:\.(?:\d+(?:_\d+)*)?)?|\B\.\d+(?:_\d+)*)(?:e[+-]?\d+(?:_\d+)*)?j?\b/i,
+    operator: /[-+%=]=?|!=|:=|\*\*?=?|\/\/?=?|<[<=>]?|>[=>]?|[&|^~]/,
+    punctuation: /[{}[\];(),.:]/,
+  };
+
+  // Markdown language definition - simple version for displaying raw markdown
+  (Prism.languages as Record<string, unknown>).markdown = {
+    // Code fences - just highlight the fence line itself
+    "code-fence": {
+      pattern: /^```[\w-]*$/m,
+      alias: "comment",
+    },
+    // Headers
+    title: {
+      pattern: /^#{1,6}.+$/m,
+      alias: "important",
+    },
+    // Inline code
+    "inline-code": {
+      pattern: /`[^`\n]+`/,
+      alias: "keyword",
+    },
+    // Links
+    url: {
+      pattern: /\[[^\]]+\]\([^)]+\)/,
+      alias: "url",
+    },
+    // Images
+    image: {
+      pattern: /!\[[^\]]*\]\([^)]+\)/,
+      alias: "url",
+    },
+    // Bold
+    bold: {
+      pattern: /\*\*[^*]+\*\*/,
+      alias: "important",
+    },
+    // Italic
+    italic: {
+      pattern: /(?<!\*)\*[^*]+\*(?!\*)/,
+      alias: "italic",
+    },
+    // Lists
+    list: {
+      pattern: /^[\t ]*[-*+](?=\s)/m,
+      alias: "punctuation",
+    },
+    // Numbered lists
+    "numbered-list": {
+      pattern: /^[\t ]*\d+\.(?=\s)/m,
+      alias: "punctuation",
+    },
+    // Blockquotes
+    blockquote: {
+      pattern: /^>/m,
+      alias: "punctuation",
+    },
+  };
+
   // PHP language definition
   (Prism.languages as Record<string, unknown>).php = {
     comment: {
