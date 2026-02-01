@@ -155,16 +155,32 @@ export function normalizeBlocks(blocks: MarkdownBlock[]): NormalizedBlock[] {
 }
 
 export interface InlineToken {
-  type: "text" | "link" | "bold" | "italic" | "code" | "boldItalic";
+  type: "text" | "link" | "bold" | "italic" | "code" | "boldItalic" | "image";
   content: string;
   href?: string;
 }
 
+// Check if a URL looks like an image
+const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?.*)?$/i;
+const imageHosts = [
+  /^https?:\/\/picsum\.photos\//,
+  /^https?:\/\/placehold\.co\//,
+  /^https?:\/\/placekitten\.com\//,
+  /^https?:\/\/via\.placeholder\.com\//,
+  /^https?:\/\/loremflickr\.com\//,
+  /^https?:\/\/i\.imgur\.com\//,
+];
+function isImageUrl(url: string): boolean {
+  if (imageExtensions.test(url)) return true;
+  return imageHosts.some((pattern) => pattern.test(url));
+}
+
 export function parseInlineMarkdown(text: string): InlineToken[] {
   const tokens: InlineToken[] = [];
-  // Order matters: boldItalic before bold/italic, link before others
+  // Order matters: image before link (![alt](url) vs [text](url)), boldItalic before bold/italic
+  // Added: plain URLs (https://...)
   const regex =
-    /(\[([^\]]+)\]\(([^)]+)\))|(\*\*\*(.+?)\*\*\*)|(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`([^`]+)`)/g;
+    /(!\[([^\]]*)\]\(([^)]+)\))|(\[([^\]]+)\]\(([^)]+)\))|(\*\*\*(.+?)\*\*\*)|(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`([^`]+)`)|(https?:\/\/[^\s<>\"']+)/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -179,20 +195,36 @@ export function parseInlineMarkdown(text: string): InlineToken[] {
     }
 
     if (match[1]) {
-      // Link: [text](url)
-      tokens.push({ type: "link", content: match[2], href: match[3] });
+      // Image: ![alt](url)
+      tokens.push({ type: "image", content: match[2] || "", href: match[3] });
     } else if (match[4]) {
+      // Link: [text](url)
+      tokens.push({ type: "link", content: match[5], href: match[6] });
+    } else if (match[7]) {
       // Bold+Italic: ***text***
-      tokens.push({ type: "boldItalic", content: match[5] });
-    } else if (match[6]) {
+      tokens.push({ type: "boldItalic", content: match[8] });
+    } else if (match[9]) {
       // Bold: **text**
-      tokens.push({ type: "bold", content: match[7] });
-    } else if (match[8]) {
+      tokens.push({ type: "bold", content: match[10] });
+    } else if (match[11]) {
       // Italic: *text*
-      tokens.push({ type: "italic", content: match[9] });
-    } else if (match[10]) {
-      // Inline code: `code`
-      tokens.push({ type: "code", content: match[11] });
+      tokens.push({ type: "italic", content: match[12] });
+    } else if (match[13]) {
+      // Inline code: `code` - check if content is an image URL
+      const codeContent = match[14];
+      if (isImageUrl(codeContent)) {
+        tokens.push({ type: "image", content: "", href: codeContent });
+      } else {
+        tokens.push({ type: "code", content: codeContent });
+      }
+    } else if (match[15]) {
+      // Plain URL - render as image if it looks like one, otherwise as link
+      const url = match[15];
+      if (isImageUrl(url)) {
+        tokens.push({ type: "image", content: "", href: url });
+      } else {
+        tokens.push({ type: "link", content: url, href: url });
+      }
     }
 
     lastIndex = match.index + match[0].length;

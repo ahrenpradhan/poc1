@@ -7,6 +7,16 @@ export function InlineMarkdown({ text }: { text: string }) {
     <>
       {tokens.map((token, i) => {
         switch (token.type) {
+          case "image":
+            return (
+              <img
+                key={i}
+                src={token.href}
+                alt={token.content || "image"}
+                className="max-w-full h-auto rounded-lg my-2 inline-block"
+                loading="lazy"
+              />
+            );
           case "link":
             return (
               <a
