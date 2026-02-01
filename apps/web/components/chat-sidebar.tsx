@@ -8,6 +8,16 @@ import { MessageSquare, Plus, X, Trash2 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { useSidebarState } from "@/lib/sidebar-context";
 import { Button } from "@repo/ui/primitives/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@repo/ui/primitives/alert-dialog";
 import { useState } from "react";
 
 interface Chat {
@@ -23,6 +33,7 @@ export function ChatSidebar() {
   const router = useRouter();
   const { isOpen, isMobile, setIsOpen } = useSidebarState();
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
 
   const { data, loading } = useQuery(GET_USER_CHATS, {
     fetchPolicy: "cache-and-network",
@@ -41,24 +52,28 @@ export function ChatSidebar() {
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, chat: Chat) => {
+  const handleDeleteClick = (e: React.MouseEvent, chat: Chat) => {
     e.preventDefault();
     e.stopPropagation();
+    setChatToDelete(chat);
+  };
 
-    if (deletingId) return;
+  const handleConfirmDelete = async () => {
+    if (!chatToDelete || deletingId) return;
 
-    setDeletingId(chat.id);
+    setDeletingId(chatToDelete.id);
     try {
-      await deleteChat({ variables: { id: chat.id } });
+      await deleteChat({ variables: { id: chatToDelete.id } });
 
       // If we're on the deleted chat's page, redirect to home
-      if (pathname === `/chat/${chat.public_id}`) {
+      if (pathname === `/chat/${chatToDelete.public_id}`) {
         router.push("/");
       }
     } catch (error) {
       console.error("Failed to delete chat:", error);
     } finally {
       setDeletingId(null);
+      setChatToDelete(null);
     }
   };
 
@@ -142,7 +157,7 @@ export function ChatSidebar() {
                   </div>
                 </Link>
                 <button
-                  onClick={(e) => handleDelete(e, chat)}
+                  onClick={(e) => handleDeleteClick(e, chat)}
                   disabled={isDeleting}
                   className="opacity-0 group-hover:opacity-100 p-1.5 rounded bg-muted-foreground/10 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-all flex-shrink-0"
                   title="Delete chat"
@@ -155,6 +170,33 @@ export function ChatSidebar() {
         </div>
       </div>
     </div>
+  );
+
+  const deleteConfirmDialog = (
+    <AlertDialog
+      open={!!chatToDelete}
+      onOpenChange={(open) => !open && setChatToDelete(null)}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Chat</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete "
+            {chatToDelete?.title || "Untitled Chat"}"? This action cannot be
+            undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmDelete}
+            className="bg-red-500 hover:bg-red-600"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 
   // Mobile: render as overlay drawer
@@ -170,10 +212,16 @@ export function ChatSidebar() {
         <div className="fixed inset-y-0 left-0 z-50 shadow-xl">
           {sidebarContent}
         </div>
+        {deleteConfirmDialog}
       </>
     );
   }
 
   // Desktop: render inline
-  return sidebarContent;
+  return (
+    <>
+      {sidebarContent}
+      {deleteConfirmDialog}
+    </>
+  );
 }
