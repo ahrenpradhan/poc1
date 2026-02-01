@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_CHAT_MESSAGES_BY_USER_COUNT } from "@/graphql/queries";
+import { GetChatMessagesByUserCountResponse, Message } from "@/graphql/types";
 import { ChatMessage } from "./chat-message";
 import { TypingIndicator } from "./typing-indicator";
 import { Loading } from "@/components/loading";
@@ -12,18 +13,6 @@ import {
   VIEWPORT_FILL_INTERVAL,
   INTERSECTION_THRESHOLD,
 } from "@/lib/constants";
-
-interface Message {
-  id: number;
-  chat_id: number;
-  sequence: number;
-  role: "user" | "assistant" | "system";
-  content: string;
-  content_type?: string;
-  adapter?: string;
-  network_method?: string;
-  created_at: string;
-}
 
 interface ChatMessageListProps {
   chatId: number;
@@ -45,16 +34,17 @@ export function ChatMessageList({
   const previousScrollHeight = useRef<number>(0);
   const [isFillingViewport, setIsFillingViewport] = useState(false);
 
-  const { data, loading, fetchMore } = useQuery(
-    GET_CHAT_MESSAGES_BY_USER_COUNT,
-    {
-      variables: {
-        chat_id: chatId,
-        userMessageCount: USER_MESSAGE_PAGE_SIZE,
+  const { data, loading, fetchMore } =
+    useQuery<GetChatMessagesByUserCountResponse>(
+      GET_CHAT_MESSAGES_BY_USER_COUNT,
+      {
+        variables: {
+          chat_id: chatId,
+          userMessageCount: USER_MESSAGE_PAGE_SIZE,
+        },
+        notifyOnNetworkStatusChange: true,
       },
-      notifyOnNetworkStatusChange: true,
-    },
-  );
+    );
 
   const messages =
     data?.chatMessagesByUserCount?.edges?.map(
@@ -96,7 +86,12 @@ export function ChatMessageList({
         userMessageCount: USER_MESSAGE_PAGE_SIZE,
         beforeSequence,
       },
-      updateQuery: (prev, { fetchMoreResult }) => {
+      updateQuery: (
+        prev: GetChatMessagesByUserCountResponse,
+        {
+          fetchMoreResult,
+        }: { fetchMoreResult?: GetChatMessagesByUserCountResponse },
+      ) => {
         if (!fetchMoreResult) return prev;
 
         const newEdges = fetchMoreResult.chatMessagesByUserCount.edges;

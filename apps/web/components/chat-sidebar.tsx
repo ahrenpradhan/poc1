@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_USER_CHATS, DELETE_CHAT } from "@/graphql/queries";
+import { GetUserChatsResponse, Chat } from "@/graphql/types";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { MessageSquare, Plus, X, Trash2 } from "lucide-react";
@@ -20,14 +21,6 @@ import {
 } from "@repo/ui/primitives/alert-dialog";
 import { useState } from "react";
 
-interface Chat {
-  id: number;
-  public_id: string;
-  title: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export function ChatSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -35,7 +28,7 @@ export function ChatSidebar() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
 
-  const { data, loading } = useQuery(GET_USER_CHATS, {
+  const { data, loading } = useQuery<GetUserChatsResponse>(GET_USER_CHATS, {
     fetchPolicy: "cache-and-network",
   });
 

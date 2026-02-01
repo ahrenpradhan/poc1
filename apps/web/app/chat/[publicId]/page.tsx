@@ -10,16 +10,12 @@ import { ChatMessageList } from "@/components/chat/chat-message-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { GET_CHAT_BY_PUBLIC_ID, GENERATE_AI_RESPONSE } from "@/graphql/queries";
+import {
+  GetChatByPublicIdResponse,
+  GenerateAIResponseResponse,
+  Message,
+} from "@/graphql/types";
 import { useSSEChat } from "@/hooks/useSSEChat";
-
-interface Message {
-  id: number;
-  chat_id: number;
-  sequence: number;
-  role: "user" | "assistant" | "system";
-  content: string;
-  created_at: string;
-}
 
 export default function ChatPage() {
   const params = useParams();
@@ -37,12 +33,16 @@ export default function ChatPage() {
   const adapterParam = searchParams.get("adapter");
   const networkParam = searchParams.get("network");
 
-  const { data, loading } = useQuery(GET_CHAT_BY_PUBLIC_ID, {
-    variables: { public_id: publicId },
-    skip: !publicId || sessionStatus !== "authenticated",
-  });
+  const { data, loading } = useQuery<GetChatByPublicIdResponse>(
+    GET_CHAT_BY_PUBLIC_ID,
+    {
+      variables: { public_id: publicId },
+      skip: !publicId || sessionStatus !== "authenticated",
+    },
+  );
 
-  const [generateAIResponse] = useMutation(GENERATE_AI_RESPONSE);
+  const [generateAIResponse] =
+    useMutation<GenerateAIResponseResponse>(GENERATE_AI_RESPONSE);
 
   const chat = data?.chatByPublicId;
 

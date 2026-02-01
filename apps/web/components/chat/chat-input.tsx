@@ -11,6 +11,12 @@ import {
   GENERATE_AI_RESPONSE,
 } from "@/graphql/queries";
 import {
+  CreateNewChatByMessageResponse,
+  CreateMessageResponse,
+  GenerateAIResponseResponse,
+  Message,
+} from "@/graphql/types";
+import {
   REFOCUS_DELAY,
   INPUT_MAX_HEIGHT,
   INPUT_MAX_HEIGHT_MOBILE,
@@ -18,14 +24,6 @@ import {
 import { AdapterSelector, AdapterType } from "./adapter-selector";
 import { NetworkSelector, NetworkType } from "./network-selector";
 import { useSSEChat } from "@/hooks/useSSEChat";
-
-interface Message {
-  id: number;
-  sequence: number;
-  role: string;
-  content: string;
-  created_at: string;
-}
 
 interface ChatInputProps {
   mode: "create" | "reply";
@@ -89,12 +87,12 @@ export function ChatInput({
     adjustTextareaHeight();
   }, [message]);
 
-  const [createNewChat, { loading: creatingChat }] = useMutation(
-    CREATE_NEW_CHAT_BY_MESSAGE,
-  );
+  const [createNewChat, { loading: creatingChat }] =
+    useMutation<CreateNewChatByMessageResponse>(CREATE_NEW_CHAT_BY_MESSAGE);
   const [createMessage, { loading: sendingMessage }] =
-    useMutation(CREATE_MESSAGE);
-  const [generateAIResponse] = useMutation(GENERATE_AI_RESPONSE);
+    useMutation<CreateMessageResponse>(CREATE_MESSAGE);
+  const [generateAIResponse] =
+    useMutation<GenerateAIResponseResponse>(GENERATE_AI_RESPONSE);
 
   const isLoading = creatingChat || sendingMessage;
 
