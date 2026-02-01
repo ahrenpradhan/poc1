@@ -58,7 +58,11 @@ export const ollamaAdapter = {
     try {
       const ollama = new OllamaAdapterClass();
       const stream = ollama.stream(prompt);
-      return await collectStream(stream);
+      const content = await collectStream(stream);
+      return {
+        content,
+        content_type: "text",
+      };
     } catch (err) {
       console.error(err);
       throw new Error(err?.message ?? "LLM failed");
@@ -69,7 +73,7 @@ export const ollamaAdapter = {
     try {
       const ollama = new OllamaAdapterClass();
       for await (const chunk of ollama.stream(prompt)) {
-        yield chunk;
+        yield { chunk, content_type: "text" };
       }
     } catch (err) {
       console.error(err);

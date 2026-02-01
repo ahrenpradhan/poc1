@@ -36,6 +36,8 @@ export const GET_CHAT_MESSAGES_PAGINATED = gql`
           sequence
           role
           content
+          content_type
+          adapter
           created_at
         }
       }
@@ -69,6 +71,8 @@ export const GET_CHAT_MESSAGES_BY_USER_COUNT = gql`
           sequence
           role
           content
+          content_type
+          adapter
           created_at
         }
       }
@@ -135,6 +139,7 @@ export const GENERATE_AI_RESPONSE = gql`
       sequence
       role
       content
+      content_type
       adapter
       created_at
     }

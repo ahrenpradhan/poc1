@@ -34,6 +34,7 @@ export const projectSchema = `
     sequence: Int!
     role: MessageRole!
     content: String!
+    content_type: String
     adapter: String
     created_at: String!
   }

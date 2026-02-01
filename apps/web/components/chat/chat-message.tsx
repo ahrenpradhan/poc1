@@ -10,6 +10,7 @@ import { AiTextRenderer } from "@repo/ui";
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
   content: string;
+  adapter?: string;
   created_at: string;
   className?: string;
 }
@@ -63,6 +64,7 @@ const formatTime = (timestamp: string) => {
 export function ChatMessage({
   role,
   content,
+  adapter,
   created_at,
   className,
 }: ChatMessageProps) {
@@ -94,9 +96,16 @@ export function ChatMessage({
           <AiTextRenderer content={content} config={{}} />
         </div>
       </div>
-      <span className="text-[10px] sm:text-xs text-muted-foreground mt-1 px-1">
-        {formatTime(created_at)}
-      </span>
+      <div className="flex items-center gap-2 mt-1 px-1">
+        <span className="text-[10px] sm:text-xs text-muted-foreground">
+          {formatTime(created_at)}
+        </span>
+        {!isUser && adapter && (
+          <span className="text-[10px] sm:text-xs text-muted-foreground/70">
+            · {adapter}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

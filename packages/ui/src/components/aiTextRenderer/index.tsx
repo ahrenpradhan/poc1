@@ -3,12 +3,13 @@ import { splitMarkdownBlocks, normalizeBlocks } from "./utils";
 import { CodeBlock } from "./CodeBlock";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { VegaLiteChart } from "./VegaLiteChart";
+import { InlineMarkdown } from "./InlineMarkdown";
 
 export function AiTextRenderer({ content }: { content: string }) {
   // Check for code fences (including escaped backticks)
   const hasCodeFence = content.includes("```") || content.includes("\\`\\`\\`");
   if (!hasCodeFence) {
-    return <>{content}</>;
+    return <InlineMarkdown text={content} />;
   }
 
   const blocks = splitMarkdownBlocks(content);
@@ -41,7 +42,7 @@ export function AiTextRenderer({ content }: { content: string }) {
           default:
             return (
               <Fragment key={key}>
-                {block.content}
+                <InlineMarkdown text={block.content} />
                 <br />
               </Fragment>
             );
@@ -54,5 +55,11 @@ export function AiTextRenderer({ content }: { content: string }) {
 export { CodeBlock } from "./CodeBlock";
 export { MermaidDiagram } from "./MermaidDiagram";
 export { VegaLiteChart } from "./VegaLiteChart";
-export { splitMarkdownBlocks, normalizeBlocks } from "./utils";
+export { InlineMarkdown } from "./InlineMarkdown";
+export {
+  splitMarkdownBlocks,
+  normalizeBlocks,
+  parseInlineMarkdown,
+} from "./utils";
 export type { MarkdownBlock, NormalizedBlock } from "./types";
+export type { InlineToken } from "./utils";

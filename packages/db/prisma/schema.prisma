@@ -129,12 +129,13 @@ enum MessageRole {
 }
 
 model message {
-  id       Int         @id @default(autoincrement())
-  chat_id  Int
-  sequence Int
-  role     MessageRole
-  content  String      @db.LongText
-  adapter  String?     @db.VarChar(50)
+  id           Int         @id @default(autoincrement())
+  chat_id      Int
+  sequence     Int
+  role         MessageRole
+  content      String      @db.LongText
+  content_type String?     @default("text") @db.VarChar(50)
+  adapter      String?     @db.VarChar(50)
 
   created_at DateTime  @default(now())
   deleted_at DateTime?

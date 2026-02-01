@@ -96,6 +96,58 @@ export function normalizeBlocks(blocks: MarkdownBlock[]): NormalizedBlock[] {
   });
 }
 
+export interface InlineToken {
+  type: "text" | "link" | "bold" | "italic" | "code" | "boldItalic";
+  content: string;
+  href?: string;
+}
+
+export function parseInlineMarkdown(text: string): InlineToken[] {
+  const tokens: InlineToken[] = [];
+  // Order matters: boldItalic before bold/italic, link before others
+  const regex =
+    /(\[([^\]]+)\]\(([^)]+)\))|(\*\*\*(.+?)\*\*\*)|(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`([^`]+)`)/g;
+
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add preceding text
+    if (match.index > lastIndex) {
+      tokens.push({
+        type: "text",
+        content: text.slice(lastIndex, match.index),
+      });
+    }
+
+    if (match[1]) {
+      // Link: [text](url)
+      tokens.push({ type: "link", content: match[2], href: match[3] });
+    } else if (match[4]) {
+      // Bold+Italic: ***text***
+      tokens.push({ type: "boldItalic", content: match[5] });
+    } else if (match[6]) {
+      // Bold: **text**
+      tokens.push({ type: "bold", content: match[7] });
+    } else if (match[8]) {
+      // Italic: *text*
+      tokens.push({ type: "italic", content: match[9] });
+    } else if (match[10]) {
+      // Inline code: `code`
+      tokens.push({ type: "code", content: match[11] });
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    tokens.push({ type: "text", content: text.slice(lastIndex) });
+  }
+
+  return tokens.length > 0 ? tokens : [{ type: "text", content: text }];
+}
+
 const languageMap: Record<string, string> = {
   sh: "bash",
   shell: "bash",

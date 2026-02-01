@@ -92,15 +92,20 @@ export async function sseRoutes(fastify) {
     });
 
     let fullContent = "";
+    let contentType = "text";
 
     try {
       // Stream the response
-      for await (const chunk of selectedAdapter.streamResponse(
+      for await (const streamData of selectedAdapter.streamResponse(
         lastUserMessage.content,
         existingMessages,
       )) {
+        const chunk = streamData.chunk;
+        contentType = streamData.content_type || "text";
         fullContent += chunk;
-        reply.raw.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+        reply.raw.write(
+          `data: ${JSON.stringify({ chunk, content_type: contentType })}\n\n`,
+        );
       }
 
       // Save the complete message to database
@@ -110,6 +115,7 @@ export async function sseRoutes(fastify) {
           sequence: nextSequence,
           role: "assistant",
           content: fullContent,
+          content_type: contentType,
           adapter: adapterName,
           created_at: new Date(),
         },

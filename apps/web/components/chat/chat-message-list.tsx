@@ -19,6 +19,8 @@ interface Message {
   sequence: number;
   role: "user" | "assistant" | "system";
   content: string;
+  content_type?: string;
+  adapter?: string;
   created_at: string;
 }
 
@@ -219,6 +221,7 @@ export function ChatMessageList({
           key={message.id}
           role={message.role}
           content={message.content}
+          adapter={message.adapter}
           created_at={message.created_at}
         />
       ))}
