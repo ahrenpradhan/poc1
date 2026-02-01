@@ -4,7 +4,7 @@ import mermaid from "mermaid";
 function initMermaid(isDark: boolean) {
   mermaid.initialize({
     startOnLoad: false,
-    theme: isDark ? "dark" : "default",
+    theme: isDark ? "dark" : "light",
     securityLevel: "strict",
   });
 }

@@ -146,6 +146,12 @@ export const GENERATE_AI_RESPONSE = gql`
   }
 `;
 
+export const DELETE_CHAT = gql`
+  mutation DeleteChat($id: Int!) {
+    deleteChat(id: $id)
+  }
+`;
+
 // User Queries
 export const ME_QUERY = gql`
   query Me {

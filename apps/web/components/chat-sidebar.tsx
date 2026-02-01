@@ -1,13 +1,14 @@
 "use client";
 
-import { useQuery } from "@apollo/client/react";
-import { GET_USER_CHATS } from "@/graphql/queries";
+import { useQuery, useMutation } from "@apollo/client/react";
+import { GET_USER_CHATS, DELETE_CHAT } from "@/graphql/queries";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { MessageSquare, Plus, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { MessageSquare, Plus, X, Trash2 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { useSidebarState } from "@/lib/sidebar-context";
 import { Button } from "@repo/ui/primitives/button";
+import { useState } from "react";
 
 interface Chat {
   id: number;
@@ -19,9 +20,16 @@ interface Chat {
 
 export function ChatSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isOpen, isMobile, setIsOpen } = useSidebarState();
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
   const { data, loading } = useQuery(GET_USER_CHATS, {
     fetchPolicy: "cache-and-network",
+  });
+
+  const [deleteChat] = useMutation(DELETE_CHAT, {
+    refetchQueries: [{ query: GET_USER_CHATS }],
   });
 
   const chats: Chat[] = data?.chatsByOwnerId || [];
@@ -30,6 +38,27 @@ export function ChatSidebar() {
   const handleLinkClick = () => {
     if (isMobile) {
       setIsOpen(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, chat: Chat) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (deletingId) return;
+
+    setDeletingId(chat.id);
+    try {
+      await deleteChat({ variables: { id: chat.id } });
+
+      // If we're on the deleted chat's page, redirect to home
+      if (pathname === `/chat/${chat.public_id}`) {
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Failed to delete chat:", error);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -87,26 +116,40 @@ export function ChatSidebar() {
         <div className="space-y-1">
           {chats.map((chat) => {
             const isActive = pathname === `/chat/${chat.public_id}`;
+            const isDeleting = deletingId === chat.id;
             return (
-              <Link
+              <div
                 key={chat.id}
-                href={`/chat/${chat.public_id}`}
-                onClick={handleLinkClick}
                 className={cn(
-                  "flex items-start gap-3 p-3 rounded-lg hover:bg-muted transition-colors",
+                  "group flex items-start gap-3 p-3 rounded-lg hover:bg-muted transition-colors relative",
                   isActive && "bg-muted",
+                  isDeleting && "opacity-50",
                 )}
               >
-                <MessageSquare className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {chat.title || "Untitled Chat"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(chat.updated_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </Link>
+                <Link
+                  href={`/chat/${chat.public_id}`}
+                  onClick={handleLinkClick}
+                  className="flex items-start gap-3 flex-1 min-w-0"
+                >
+                  <MessageSquare className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {chat.title || "Untitled Chat"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(chat.updated_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </Link>
+                <button
+                  onClick={(e) => handleDelete(e, chat)}
+                  disabled={isDeleting}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded bg-muted-foreground/10 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-all flex-shrink-0"
+                  title="Delete chat"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             );
           })}
         </div>
